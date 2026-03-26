@@ -1,0 +1,521 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yodha Echoes - Sonic Therapy</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- YodhaMind Design System --- */
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --bg-deep: #0f172a;
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-glow: #a78bfa;
+        }
+
+        * { box-sizing: border-box; user-select: none; outline: none; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-deep);
+            /* Subtle starry background */
+            background-image: 
+                radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 3px),
+                radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 2px),
+                radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 3px);
+            background-size: 550px 550px, 350px 350px, 250px 250px;
+            background-position: 0 0, 40px 60px, 130px 270px;
+            font-family: 'Poppins', sans-serif;
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- Navigation --- */
+        nav {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 15px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--glass-border);
+            z-index: 100;
+        }
+
+        .logo {
+            font-weight: 700;
+            font-size: 1.2rem;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 1px;
+        }
+
+        .controls-top {
+            display: flex;
+            gap: 15px;
+        }
+
+        /* --- Main Layout --- */
+        .app-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        /* The Sequencer */
+        .echo-circle-wrapper {
+            position: relative;
+            width: min(90vw, 500px);
+            height: min(90vw, 500px);
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.02);
+            box-shadow: 0 0 50px rgba(102, 126, 234, 0.1);
+            border: 1px solid var(--glass-border);
+            transition: transform 0.1s;
+        }
+
+        canvas {
+            border-radius: 50%;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Overlay Text */
+        .status-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            pointer-events: none;
+            text-align: center;
+            opacity: 0.8;
+            transition: opacity 0.5s;
+        }
+
+        /* Bottom Toolbar */
+        .toolbar {
+            margin-top: 30px;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            padding: 12px 25px;
+            border-radius: 50px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            z-index: 50;
+        }
+
+        .tool-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s;
+            min-width: 60px;
+        }
+        .tool-btn:hover { color: white; transform: translateY(-3px); }
+        .tool-btn.active { color: #a78bfa; }
+
+        .icon {
+            font-size: 1.4rem;
+            background: rgba(255,255,255,0.05);
+            width: 45px; height: 45px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            border: 1px solid transparent;
+            transition: all 0.3s;
+        }
+        .tool-btn:hover .icon { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); }
+        .tool-btn.active .icon { background: var(--primary-gradient); color: white; box-shadow: 0 0 15px rgba(102, 126, 234, 0.4); }
+
+        .tool-label { font-size: 0.7rem; letter-spacing: 0.5px; }
+
+        /* Tempo Slider */
+        .tempo-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0 15px;
+            border-left: 1px solid var(--glass-border);
+            margin-left: 10px;
+        }
+        input[type="range"] {
+            width: 100px;
+            accent-color: #a78bfa;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px; height: 12px;
+            background: #a78bfa;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        /* Start Overlay */
+        .start-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            transition: opacity 0.5s;
+        }
+        .start-btn {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 0 30px rgba(102, 126, 234, 0.3);
+            animation: pulse-btn 2s infinite;
+        }
+        @keyframes pulse-btn { 0%{transform:scale(1);} 50%{transform:scale(1.05);} 100%{transform:scale(1);} }
+
+        /* Minimalist Ghost Buttons */
+.ghost-btn {
+    position: absolute; top: 25px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.8);
+    padding: 8px 16px;
+    border-radius: 30px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.9rem;
+    cursor: pointer;
+    z-index: 100;
+    transition: all 0.3s;
+    backdrop-filter: blur(4px);
+    display: flex; align-items: center; gap: 6px;
+}
+.ghost-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+}
+
+    </style>
+</head>
+<body>
+
+    <nav>
+    <button class="ghost-btn" onclick="window.location.href='../pages/index.html'" style="left: 25px;">
+    🏠 Home
+</button>
+<button class="ghost-btn" onclick="window.location.href='../pages/games.html'" style="right: 25px;">
+    ✕ Exit
+</button>
+    </nav>
+
+    <div class="app-container">
+        
+        <div class="echo-circle-wrapper">
+            <canvas id="musicCanvas"></canvas>
+            <div class="status-text" id="statusText">
+                Click anywhere to place a star.<br>Listen to the echo.
+            </div>
+        </div>
+
+        <div class="toolbar">
+            <button class="tool-btn active" id="playBtn" onclick="togglePlay()">
+                <div class="icon" id="playIcon">⏸</div>
+                <span class="tool-label">Pause</span>
+            </button>
+
+            <button class="tool-btn" onclick="clearSky()">
+                <div class="icon">✨</div>
+                <span class="tool-label">Clear</span>
+            </button>
+
+            <button class="tool-btn" onclick="randomizeSky()">
+                <div class="icon">🎲</div>
+                <span class="tool-label">Random</span>
+            </button>
+
+            <div class="tempo-control">
+                <span style="font-size:0.8rem; color:var(--text-muted)">Speed</span>
+                <input type="range" id="speedSlider" min="0.005" max="0.04" step="0.001" value="0.015">
+            </div>
+        </div>
+
+        <!-- Audio Start Overlay (Browser Policy) -->
+        <div class="start-overlay" id="startOverlay">
+            <h2 style="margin-bottom:20px; font-weight:300;">Find your rhythm.</h2>
+            <button class="start-btn" onclick="startEngine()">Enter Echoes</button>
+        </div>
+
+    </div>
+
+    <script>
+        /**
+         * Yodha Echoes Engine
+         * A circular music sequencer based on spatial harmonics.
+         */
+
+        // --- Config ---
+        const canvas = document.getElementById('musicCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Pentatonic Scale Frequencies (C Major Pentatonic: C, D, E, G, A)
+        // Spread across octaves for depth
+        const SCALE = [
+            130.81, 146.83, 164.81, 196.00, 220.00, // C3 - A3
+            261.63, 293.66, 329.63, 392.00, 440.00, // C4 - A4
+            523.25, 587.33, 659.26, 783.99, 880.00  // C5 - A5
+        ];
+
+        let nodes = [];
+        let angle = 0;
+        let speed = 0.015;
+        let isPlaying = false;
+        let audioCtx = null;
+        let centerX, centerY, radius;
+
+        // --- Setup ---
+        function init() {
+            resize();
+            window.addEventListener('resize', resize);
+            
+            // Listeners
+            canvas.addEventListener('mousedown', addNode);
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                addNode(e.touches[0]);
+            });
+
+            document.getElementById('speedSlider').addEventListener('input', (e) => {
+                speed = parseFloat(e.target.value);
+            });
+        }
+
+        function resize() {
+            const rect = document.querySelector('.echo-circle-wrapper').getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            centerX = canvas.width / 2;
+            centerY = canvas.height / 2;
+            radius = (canvas.width / 2) - 10;
+        }
+
+        function startEngine() {
+            document.getElementById('startOverlay').style.opacity = '0';
+            setTimeout(() => document.getElementById('startOverlay').style.display = 'none', 500);
+            
+            if(!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            
+            isPlaying = true;
+            animate();
+        }
+
+        // --- Audio Logic ---
+        function playTone(node) {
+            if(!audioCtx) return;
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            // Choose frequency based on distance from center (inner = lower pitch, outer = higher)
+            const dist = Math.sqrt(Math.pow(node.x - centerX, 2) + Math.pow(node.y - centerY, 2));
+            const normalizedDist = dist / radius; // 0 to 1
+            const index = Math.floor(normalizedDist * SCALE.length);
+            const freq = SCALE[Math.min(index, SCALE.length - 1)];
+
+            osc.type = 'sine'; // Soft tone
+            osc.frequency.value = freq;
+            
+            // Envelope
+            const now = audioCtx.currentTime;
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(0.2, now + 0.05); // Attack
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 1.5); // Long decay (Reverb-ish)
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.start(now);
+            osc.stop(now + 1.5);
+
+            // Visual Feedback
+            node.active = 1.0;
+        }
+
+        // --- Interaction ---
+        function addNode(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // Check bounds
+            const dist = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
+            if(dist > radius) return;
+
+            // Hide help text
+            document.getElementById('statusText').style.opacity = '0';
+
+            nodes.push({
+                x: x,
+                y: y,
+                angle: Math.atan2(y - centerY, x - centerX),
+                active: 0 // Animation state
+            });
+        }
+
+        function clearSky() {
+            if(confirm("Clear all stars?")) {
+                nodes = [];
+                document.getElementById('statusText').style.opacity = '0.8';
+            }
+        }
+
+        function randomizeSky() {
+            nodes = [];
+            document.getElementById('statusText').style.opacity = '0';
+            for(let i=0; i<8; i++) {
+                const r = Math.random() * radius * 0.8; // Keep slightly inward
+                const a = Math.random() * Math.PI * 2;
+                nodes.push({
+                    x: centerX + Math.cos(a) * r,
+                    y: centerY + Math.sin(a) * r,
+                    angle: a,
+                    active: 0
+                });
+            }
+        }
+
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            const btn = document.getElementById('playBtn');
+            const icon = document.getElementById('playIcon');
+            const label = btn.querySelector('.tool-label');
+            
+            if(isPlaying) {
+                btn.classList.add('active');
+                icon.innerText = '⏸';
+                label.innerText = 'Pause';
+            } else {
+                btn.classList.remove('active');
+                icon.innerText = '▶️';
+                label.innerText = 'Play';
+            }
+        }
+
+        // --- Animation Loop ---
+        function animate() {
+            if(!isPlaying) {
+                requestAnimationFrame(animate);
+                return;
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Radar Line
+            const radarX = centerX + Math.cos(angle) * radius;
+            const radarY = centerY + Math.sin(angle) * radius;
+            
+            // Radar Gradient
+            const grad = ctx.createLinearGradient(centerX, centerY, radarX, radarY);
+            grad.addColorStop(0, 'rgba(167, 139, 250, 0)');
+            grad.addColorStop(1, 'rgba(167, 139, 250, 0.5)');
+            
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(radarX, radarY);
+            ctx.strokeStyle = grad;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Process Nodes
+            // We need to detect if the radar line passed a node in this frame
+            // We do this by checking angular difference
+            const prevAngle = angle - speed;
+            
+            nodes.forEach(node => {
+                // Normalize node angle to match current rotation cycle
+                let nodeA = node.angle;
+                // Handle wrap around logic roughly
+                // (To be precise requires detailed math, but simplistic check works for visuals)
+                
+                // Check collision: is node angle between prevAngle and current angle?
+                // We use a small tolerance based on speed
+                let diff = angle - nodeA;
+                // Normalize diff to -PI to +PI
+                while (diff <= -Math.PI) diff += Math.PI*2;
+                while (diff > Math.PI) diff -= Math.PI*2;
+
+                if (diff >= 0 && diff < speed) {
+                    playTone(node);
+                }
+
+                // Draw Node
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, 6, 0, Math.PI * 2);
+                ctx.fillStyle = 'white';
+                ctx.fill();
+
+                // Draw Ripple if active
+                if(node.active > 0) {
+                    ctx.beginPath();
+                    ctx.arc(node.x, node.y, 6 + (1-node.active)*40, 0, Math.PI * 2);
+                    ctx.strokeStyle = `rgba(167, 139, 250, ${node.active})`;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    node.active -= 0.02; // Decay animation
+                }
+            });
+
+            // Update rotation
+            angle += speed;
+            if(angle > Math.PI * 2) angle -= Math.PI * 2;
+
+            // Draw Center Decoration
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 4, 0, Math.PI*2);
+            ctx.fillStyle = 'rgba(255,255,255,0.5)';
+            ctx.fill();
+
+            requestAnimationFrame(animate);
+        }
+
+        init();
+
+    </script>
+    <script src="../shared/crisis-support.js"></script>
+</body>
+</html>
+
+

@@ -1,0 +1,417 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Memory Matrix</title>
+    <style>
+        :root {
+            --bg: #0b1020;
+            --panel: rgba(15, 23, 42, 0.85);
+            --panel-border: rgba(148, 163, 184, 0.22);
+            --text: #e2e8f0;
+            --muted: #94a3b8;
+            --accent: #6366f1;
+            --accent-soft: rgba(99, 102, 241, 0.18);
+            --ok: #22c55e;
+            --warn: #fbbf24;
+            --tile: #1e293b;
+            --tile-hover: #334155;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(60rem 35rem at -10% -20%, #1e1b4b 0%, transparent 55%),
+                radial-gradient(50rem 30rem at 120% 110%, #0f766e 0%, transparent 50%),
+                var(--bg);
+        }
+
+        .page {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 14px 18px;
+            background: rgba(2, 6, 23, 0.72);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .topbar h2 {
+            margin: 0;
+            font-size: 1.1rem;
+            letter-spacing: 0.3px;
+            font-weight: 700;
+        }
+
+        .btn {
+            border: 1px solid var(--panel-border);
+            background: rgba(30, 41, 59, 0.8);
+            color: var(--text);
+            padding: 9px 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: transform 0.15s ease, background-color 0.2s ease;
+        }
+
+        .btn:hover { background: rgba(51, 65, 85, 0.9); transform: translateY(-1px); }
+        .btn:active { transform: translateY(0); }
+
+        .stage {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .shell {
+            width: min(560px, 100%);
+            background: var(--panel);
+            border: 1px solid var(--panel-border);
+            border-radius: 22px;
+            padding: 22px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            max-height: calc(100vh - 96px);
+            overflow: auto;
+        }
+
+        .headline {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+
+        .headline h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            letter-spacing: 0.2px;
+        }
+
+        .meta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .meta-card {
+            background: rgba(15, 23, 42, 0.66);
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            border-radius: 12px;
+            padding: 10px 12px;
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        .meta-card span {
+            display: block;
+            color: var(--text);
+            font-size: 1.2rem;
+            margin-top: 2px;
+            font-weight: 700;
+        }
+
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            width: min(100%, calc(100vh - 330px));
+            aspect-ratio: 1 / 1;
+            background: rgba(2, 6, 23, 0.5);
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            padding: 10px;
+            border-radius: 14px;
+            margin: 0 auto;
+        }
+
+        .tile {
+            border: 0;
+            border-radius: 10px;
+            transition: all 0.18s ease;
+            cursor: pointer;
+        }
+
+        .tile-idle {
+            background-color: var(--tile);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 8px 14px rgba(0, 0, 0, 0.22);
+        }
+
+        .tile-idle:hover:not(:disabled) { background-color: var(--tile-hover); }
+        .tile-idle:active:not(:disabled) { transform: scale(0.98); }
+
+        .tile-active {
+            background-color: var(--warn);
+            box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.45), 0 0 24px rgba(251, 191, 36, 0.5);
+            transform: scale(0.98);
+        }
+
+        .result {
+            display: none;
+            text-align: center;
+            margin-top: 12px;
+        }
+
+        .result.show { display: block; }
+
+        .result h3 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .result #final-level {
+            font-size: 2.6rem;
+            margin: 8px 0 0;
+            font-weight: 800;
+        }
+
+        .subtle {
+            color: var(--muted);
+            margin: 6px 0 20px;
+        }
+
+        .btn-primary {
+            border: 0;
+            width: 100%;
+            padding: 13px 14px;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            color: white;
+            background: linear-gradient(135deg, var(--accent), #4f46e5);
+        }
+
+        .hidden { display: none !important; }
+
+        @media (max-width: 520px) {
+            .headline h1 { font-size: 1.45rem; }
+            .shell { padding: 16px; border-radius: 16px; }
+            .meta-card span { font-size: 1.05rem; }
+            #grid { width: min(100%, calc(100vh - 300px)); }
+        }
+
+        @media (max-height: 760px) {
+            .topbar { padding: 10px 12px; }
+            .stage { padding: 10px; }
+            .shell { padding: 14px; border-radius: 14px; max-height: calc(100vh - 74px); }
+            .headline h1 { font-size: 1.3rem; }
+            .meta { margin-bottom: 10px; }
+            .meta-card { padding: 8px 10px; }
+            .meta-card span { font-size: 1rem; }
+            #grid { gap: 8px; padding: 8px; width: min(100%, calc(100vh - 250px)); }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <header class="topbar">
+            <button id="resetBtn" class="btn" type="button">↺ Reset</button>
+            <h2>Memory Matrix</h2>
+            <a href="../pages/games.html" class="btn">✕ Exit</a>
+        </header>
+
+        <main class="stage">
+            <section class="shell">
+                <div id="game-ui">
+                    <div class="headline">
+                        <h1>Memory Matrix</h1>
+                    </div>
+
+                    <div class="meta">
+                        <div class="meta-card">Level<span id="level-display">1</span></div>
+                        <div class="meta-card">Status<span id="status-display">Watch...</span></div>
+                    </div>
+
+                    <div id="grid"></div>
+                </div>
+
+                <div id="result-screen" class="result">
+                    <h3>Pattern Broken</h3>
+                    <div id="final-level">Level 1</div>
+                    <p class="subtle">Working memory capacity</p>
+                    <button id="tryAgainBtn" class="btn-primary" type="button">Try Again</button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        let level = 1;
+        let sequence = [];
+        let playerStep = 0;
+        let isShowing = false;
+        let gameOver = false;
+        let activeTimeouts = [];
+
+        const gridEl = document.getElementById('grid');
+        const levelDisplay = document.getElementById('level-display');
+        const statusDisplay = document.getElementById('status-display');
+        const gameUI = document.getElementById('game-ui');
+        const resultScreen = document.getElementById('result-screen');
+        const finalLevelDisplay = document.getElementById('final-level');
+        const resetBtn = document.getElementById('resetBtn');
+        const tryAgainBtn = document.getElementById('tryAgainBtn');
+
+        function queueTimeout(callback, delay) {
+            const id = window.setTimeout(() => {
+                activeTimeouts = activeTimeouts.filter((t) => t !== id);
+                callback();
+            }, delay);
+            activeTimeouts.push(id);
+            return id;
+        }
+
+        function clearQueuedTimeouts() {
+            activeTimeouts.forEach((id) => window.clearTimeout(id));
+            activeTimeouts = [];
+        }
+
+        const tiles = [];
+        for (let i = 0; i < 9; i++) {
+            const btn = document.createElement('button');
+            btn.className = 'tile tile-idle';
+            btn.setAttribute('type', 'button');
+            btn.onclick = () => handleTileClick(i);
+            gridEl.appendChild(btn);
+            tiles.push(btn);
+        }
+
+        function setTileActive(index, isActive) {
+            if (isActive) {
+                tiles[index].classList.remove('tile-idle');
+                tiles[index].classList.add('tile-active');
+            } else {
+                tiles[index].classList.remove('tile-active');
+                tiles[index].classList.add('tile-idle');
+            }
+        }
+
+        function resetTileVisuals() {
+            tiles.forEach((tile) => {
+                tile.classList.remove('tile-active');
+                tile.classList.add('tile-idle');
+            });
+        }
+
+        function setTilesDisabled(disabled) {
+            tiles.forEach((tile) => { tile.disabled = disabled; });
+        }
+
+        function startLevel(currentLevel) {
+            clearQueuedTimeouts();
+            gameOver = false;
+            playerStep = 0;
+            isShowing = true;
+            setTilesDisabled(true);
+            resetTileVisuals();
+
+            levelDisplay.innerText = currentLevel;
+            statusDisplay.innerText = 'Watch...';
+
+            const newSeqLength = currentLevel + 2;
+            sequence = Array.from({ length: newSeqLength }, () => Math.floor(Math.random() * 9));
+
+            let i = 0;
+            const playNext = () => {
+                if (i >= sequence.length) {
+                    isShowing = false;
+                    setTilesDisabled(false);
+                    statusDisplay.innerText = 'Repeat!';
+                    return;
+                }
+
+                setTileActive(sequence[i], true);
+
+                queueTimeout(() => {
+                    setTileActive(sequence[i], false);
+                    queueTimeout(() => {
+                        i++;
+                        playNext();
+                    }, 180);
+                }, 420);
+            };
+
+            queueTimeout(playNext, 700);
+        }
+
+        function handleTileClick(index) {
+            if (isShowing || gameOver) return;
+
+            setTileActive(index, true);
+            queueTimeout(() => setTileActive(index, false), 170);
+
+            if (index === sequence[playerStep]) {
+                if (playerStep + 1 === sequence.length) {
+                    setTilesDisabled(true);
+                    statusDisplay.innerText = 'Correct!';
+                    queueTimeout(() => {
+                        level++;
+                        startLevel(level);
+                    }, 650);
+                } else {
+                    playerStep++;
+                }
+            } else {
+                endGame();
+            }
+        }
+
+        function endGame() {
+            clearQueuedTimeouts();
+            gameOver = true;
+            isShowing = false;
+            resetTileVisuals();
+            setTilesDisabled(true);
+            gameUI.classList.add('hidden');
+            resultScreen.classList.add('show');
+            finalLevelDisplay.innerText = `Level ${level}`;
+        }
+
+        function resetGame() {
+            clearQueuedTimeouts();
+            level = 1;
+            sequence = [];
+            playerStep = 0;
+            isShowing = false;
+            gameOver = false;
+            resetTileVisuals();
+            gameUI.classList.remove('hidden');
+            resultScreen.classList.remove('show');
+            startLevel(level);
+        }
+
+        resetBtn.addEventListener('click', resetGame);
+        tryAgainBtn.addEventListener('click', resetGame);
+
+        window.addEventListener('DOMContentLoaded', () => {
+            resetGame();
+        });
+    </script>
+    <script src="../shared/crisis-support.js"></script>
+</body>
+</html>
+
+

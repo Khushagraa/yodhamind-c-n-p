@@ -1,0 +1,1472 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YodhaMind — Practitioner Dashboard</title>
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --ink: #0f0e17;
+      --white: #fff;
+      --sage: #4a7c59;
+      --sage-lt: #e8f4ec;
+      --sage-dk: #2d5c3e;
+      --amber: #d97706;
+      --amber-lt: #fef3c7;
+      --red: #dc2626;
+      --red-lt: #fee2e2;
+      --blue: #3b82f6;
+      --blue-lt: #eff6ff;
+      --bg: #f7f6f2;
+      --card: #fff;
+      --border: #e5e2da;
+      --text: #374151;
+      --text-light: #6b7280;
+      --sidebar-w: 260px;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    html,
+    body {
+      height: 100%
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text)
+    }
+
+    #authGuard {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      gap: 16px
+    }
+
+    .guard-spin {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--sage);
+      border-radius: 50%;
+      animation: spin .7s linear infinite
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg)
+      }
+    }
+
+    .layout {
+      display: flex;
+      min-height: 100vh
+    }
+
+    /* sidebar */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--ink);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      z-index: 200;
+      transition: transform .3s
+    }
+
+    .sb-brand {
+      padding: 24px 20px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, .08)
+    }
+
+    .sb-brand .logo {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.3rem;
+      color: #fff;
+      text-decoration: none;
+      display: block;
+      margin-bottom: 4px;
+      letter-spacing: -.02em
+    }
+
+    .sb-brand .sub {
+      font-size: .68rem;
+      color: rgba(255, 255, 255, .35);
+      letter-spacing: .1em;
+      text-transform: uppercase
+    }
+
+    .sb-profile {
+      padding: 18px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, .08)
+    }
+
+    .avatar {
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: #fff;
+      background: linear-gradient(135deg, var(--sage), var(--amber));
+      margin-bottom: 10px
+    }
+
+    .sb-name {
+      font-weight: 600;
+      color: #fff;
+      font-size: .93rem
+    }
+
+    .sb-spec {
+      font-size: .76rem;
+      color: rgba(255, 255, 255, .42);
+      margin-top: 2px
+    }
+
+    .online-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(74, 124, 89, .25);
+      border: 1px solid rgba(74, 124, 89, .4);
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: .7rem;
+      color: #86efac;
+      font-weight: 600;
+      margin-top: 8px
+    }
+
+    .online-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #4ade80
+    }
+
+    .sb-nav {
+      flex: 1;
+      padding: 14px 12px;
+      overflow-y: auto
+    }
+
+    .nav-label {
+      font-size: .63rem;
+      color: rgba(255, 255, 255, .26);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      padding: 8px 10px 5px;
+      margin-top: 6px
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      color: rgba(255, 255, 255, .52);
+      font-size: .86rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .16s;
+      text-decoration: none;
+      margin-bottom: 2px;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+      font-family: inherit
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, .07);
+      color: #fff
+    }
+
+    .nav-item.active {
+      background: var(--sage);
+      color: #fff
+    }
+
+    .nav-item .ico {
+      font-size: 1rem;
+      flex-shrink: 0;
+      width: 20px;
+      text-align: center
+    }
+
+    .nav-badge {
+      margin-left: auto;
+      background: var(--amber);
+      color: #fff;
+      font-size: .66rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 20px;
+      min-width: 20px;
+      text-align: center
+    }
+
+    .sb-footer {
+      padding: 14px 12px;
+      border-top: 1px solid rgba(255, 255, 255, .08)
+    }
+
+    .btn-logout {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: none;
+      border: 1px solid rgba(255, 255, 255, .11);
+      color: rgba(255, 255, 255, .48);
+      font-family: inherit;
+      font-size: .86rem;
+      cursor: pointer;
+      transition: all .16s
+    }
+
+    .btn-logout:hover {
+      background: rgba(220, 38, 38, .14);
+      border-color: rgba(220, 38, 38, .4);
+      color: #fca5a5
+    }
+
+    /* mobile */
+    .mob-hd {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: var(--ink);
+      z-index: 199;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px
+    }
+
+    .mob-hd .logo {
+      font-family: 'DM Serif Display', serif;
+      color: #fff;
+      font-size: 1.1rem
+    }
+
+    .hamburger {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 1.5rem;
+      cursor: pointer
+    }
+
+    #sidebarOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .6);
+      z-index: 199;
+      backdrop-filter: blur(2px)
+    }
+
+    #sidebarOverlay.active {
+      display: block
+    }
+
+    /* main */
+    .main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh
+    }
+
+    .topbar {
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100
+    }
+
+    .topbar-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.4rem;
+      letter-spacing: -.02em
+    }
+
+    .topbar-date {
+      font-size: .82rem;
+      color: var(--text-light)
+    }
+
+    .content {
+      padding: 28px 32px;
+      flex: 1
+    }
+
+    /* views */
+    .view {
+      display: none
+    }
+
+    .view.active {
+      display: block;
+      animation: fuv .3s ease both
+    }
+
+    @keyframes fuv {
+      from {
+        opacity: 0;
+        transform: translateY(8px)
+      }
+
+      to {
+        opacity: 1;
+        transform: none
+      }
+    }
+
+    /* stats */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 28px
+    }
+
+    .stat-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 22px
+    }
+
+    .stat-card.hl {
+      background: var(--ink)
+    }
+
+    .stat-card.hl .stat-lbl {
+      color: rgba(255, 255, 255, .46)
+    }
+
+    .stat-card.hl .stat-val {
+      color: #fff
+    }
+
+    .stat-card.hl .stat-sub {
+      color: var(--sage)
+    }
+
+    .stat-lbl {
+      font-size: .78rem;
+      color: var(--text-light);
+      font-weight: 500;
+      margin-bottom: 6px
+    }
+
+    .stat-val {
+      font-family: 'DM Serif Display', serif;
+      font-size: 2rem;
+      color: var(--ink);
+      line-height: 1
+    }
+
+    .stat-sub {
+      font-size: .76rem;
+      color: var(--sage);
+      margin-top: 4px;
+      font-weight: 600
+    }
+
+    /* section hd */
+    .sec-hd {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px
+    }
+
+    .sec-hd h3 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.2rem;
+      letter-spacing: -.02em
+    }
+
+    /* table */
+    .table-wrap {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden
+    }
+
+    .tbl-filters {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap
+    }
+
+    .filter-tab {
+      padding: 6px 13px;
+      border-radius: 8px;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      font-family: inherit;
+      font-size: .8rem;
+      font-weight: 600;
+      color: var(--text-light);
+      cursor: pointer;
+      transition: all .14s
+    }
+
+    .filter-tab.active {
+      background: var(--ink);
+      border-color: var(--ink);
+      color: #fff
+    }
+
+    .filter-tab:hover:not(.active) {
+      border-color: var(--ink);
+      color: var(--ink)
+    }
+
+    .search-inp {
+      margin-left: auto;
+      padding: 7px 13px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: .83rem;
+      outline: none;
+      transition: border-color .14s;
+      min-width: 180px
+    }
+
+    .search-inp:focus {
+      border-color: var(--sage)
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse
+    }
+
+    thead th {
+      font-size: .73rem;
+      font-weight: 700;
+      color: var(--text-light);
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      padding: 11px 18px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      background: #fafaf8
+    }
+
+    tbody tr {
+      transition: background .1s
+    }
+
+    tbody tr:hover {
+      background: #fafaf8
+    }
+
+    tbody td {
+      padding: 13px 18px;
+      font-size: .86rem;
+      border-bottom: 1px solid var(--border)
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none
+    }
+
+    .td-n {
+      font-weight: 600;
+      color: var(--ink)
+    }
+
+    .td-m {
+      color: var(--text-light)
+    }
+
+    .td-c {
+      max-width: 190px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap
+    }
+
+    .empty-row td {
+      text-align: center;
+      padding: 38px;
+      color: var(--text-light)
+    }
+
+    /* pills */
+    .pill {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 20px;
+      font-size: .73rem;
+      font-weight: 700;
+      letter-spacing: .02em
+    }
+
+    .pill.pending {
+      background: var(--amber-lt);
+      color: var(--amber)
+    }
+
+    .pill.confirmed {
+      background: var(--sage-lt);
+      color: var(--sage-dk)
+    }
+
+    .pill.completed {
+      background: var(--blue-lt);
+      color: var(--blue)
+    }
+
+    .pill.cancelled {
+      background: #f3f4f6;
+      color: #6b7280
+    }
+
+    /* btns */
+    .btn-sm {
+      padding: 5px 11px;
+      border-radius: 7px;
+      border: 1.5px solid;
+      font-family: inherit;
+      font-size: .76rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .14s
+    }
+
+    .btn-ac {
+      border-color: var(--sage);
+      color: var(--sage-dk);
+      background: var(--sage-lt)
+    }
+
+    .btn-ac:hover {
+      background: var(--sage);
+      color: #fff
+    }
+
+    .btn-rj {
+      border-color: #fca5a5;
+      color: var(--red);
+      background: var(--red-lt)
+    }
+
+    .btn-rj:hover {
+      background: var(--red);
+      color: #fff
+    }
+
+    .btn-cp {
+      border-color: #bfdbfe;
+      color: var(--blue);
+      background: var(--blue-lt)
+    }
+
+    .btn-cp:hover {
+      background: var(--blue);
+      color: #fff
+    }
+
+    /* form */
+    .card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px
+    }
+
+    .card-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.1rem;
+      margin-bottom: 20px;
+      letter-spacing: -.02em
+    }
+
+    .prof-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px
+    }
+
+    .fg {
+      margin-bottom: 0
+    }
+
+    .fg.full {
+      grid-column: 1/-1
+    }
+
+    .form-label {
+      display: block;
+      font-size: .8rem;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 6px
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 10px 13px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: .88rem;
+      background: #fff;
+      color: var(--ink);
+      outline: none;
+      transition: border-color .14s
+    }
+
+    .form-input:focus {
+      border-color: var(--sage)
+    }
+
+    textarea.form-input {
+      resize: vertical;
+      min-height: 88px
+    }
+
+    .btn-primary {
+      padding: 10px 22px;
+      background: var(--ink);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: .86rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .14s
+    }
+
+    .btn-primary:hover {
+      background: #1e1d2e
+    }
+
+    .btn-outline {
+      padding: 10px 20px;
+      background: transparent;
+      color: var(--ink);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: .86rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .14s
+    }
+
+    .btn-outline:hover {
+      border-color: var(--ink)
+    }
+
+    /* avail */
+    .avail-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px
+    }
+
+    .avail-day {
+      padding: 10px 4px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      text-align: center;
+      font-size: .78rem;
+      font-weight: 600;
+      color: var(--text-light);
+      cursor: pointer;
+      transition: all .14s;
+      user-select: none
+    }
+
+    .avail-day:hover {
+      border-color: var(--sage);
+      color: var(--sage-dk)
+    }
+
+    .avail-day.active {
+      background: var(--sage-lt);
+      border-color: var(--sage);
+      color: var(--sage-dk)
+    }
+
+    .time-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px
+    }
+
+    .time-slot {
+      padding: 7px 13px;
+      border-radius: 8px;
+      border: 1.5px solid var(--border);
+      font-size: .8rem;
+      font-weight: 600;
+      color: var(--text-light);
+      cursor: pointer;
+      transition: all .14s
+    }
+
+    .time-slot:hover {
+      border-color: var(--sage);
+      color: var(--sage-dk)
+    }
+
+    .time-slot.active {
+      background: var(--sage-lt);
+      border-color: var(--sage);
+      color: var(--sage-dk)
+    }
+
+    /* toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(60px);
+      background: var(--ink);
+      color: #fff;
+      padding: 11px 20px;
+      border-radius: 12px;
+      font-size: .86rem;
+      font-weight: 600;
+      z-index: 3000;
+      transition: transform .28s, opacity .28s;
+      opacity: 0;
+      pointer-events: none
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1
+    }
+
+    .toast.ok {
+      background: var(--sage-dk)
+    }
+
+    .toast.err {
+      background: var(--red)
+    }
+
+    /* modal */
+    .modal-bg {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .5);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s
+    }
+
+    .modal-bg.active {
+      opacity: 1;
+      pointer-events: all
+    }
+
+    .modal {
+      background: #fff;
+      border-radius: 16px;
+      padding: 28px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .2);
+      transform: scale(.95);
+      transition: transform .2s
+    }
+
+    .modal-bg.active .modal {
+      transform: scale(1)
+    }
+
+    .modal h3 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.25rem;
+      margin-bottom: 10px
+    }
+
+    .modal p {
+      color: var(--text-light);
+      font-size: .88rem;
+      line-height: 1.6;
+      margin-bottom: 22px
+    }
+
+    .modal-acts {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end
+    }
+
+    /* responsive */
+    @media(max-width:1024px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr)
+      }
+    }
+
+    @media(max-width:768px) {
+      .sidebar {
+        transform: translateX(-100%)
+      }
+
+      .sidebar.active {
+        transform: translateX(0)
+      }
+
+      .mob-hd {
+        display: flex
+      }
+
+      .main {
+        margin-left: 0;
+        padding-top: 60px
+      }
+
+      .topbar {
+        display: none
+      }
+
+      .content {
+        padding: 18px 14px
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px
+      }
+
+      .prof-grid {
+        grid-template-columns: 1fr
+      }
+
+      .avail-grid {
+        grid-template-columns: repeat(4, 1fr)
+      }
+    }
+
+    @media(max-width:480px) {
+      .stats-grid {
+        grid-template-columns: 1fr
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="authGuard">
+    <div class="guard-spin"></div>
+    <p style="color:var(--text-light);font-size:.9rem">Verifying your session…</p>
+  </div>
+
+  <div id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+  <div class="mob-hd">
+    <span class="logo">🧠 YodhaMind</span>
+    <button class="hamburger" onclick="toggleSidebar()">☰</button>
+  </div>
+
+  <div class="layout" id="dashLayout" style="display:none">
+    <aside class="sidebar" id="sidebar">
+      <div class="sb-brand">
+        <a href="index.html" class="logo">🧠 YodhaMind</a>
+        <div class="sub">Practitioner Portal</div>
+      </div>
+      <div class="sb-profile">
+        <div class="avatar" id="sbAvatar">DR</div>
+        <div class="sb-name" id="sbName">Loading…</div>
+        <div class="sb-spec" id="sbSpec">Psychologist</div>
+        <div class="online-badge">
+          <div class="online-dot"></div> Active
+        </div>
+      </div>
+      <nav class="sb-nav">
+        <div class="nav-label">Overview</div>
+        <button class="nav-item active" onclick="switchView('overview',this)"><span class="ico">📊</span>
+          Dashboard</button>
+        <div class="nav-label">Sessions</div>
+        <button class="nav-item" onclick="switchView('requests',this)">
+          <span class="ico">📥</span> Incoming Requests
+          <span class="nav-badge" id="pendingBadge" style="display:none">0</span>
+        </button>
+        <button class="nav-item" onclick="switchView('history',this)"><span class="ico">📅</span> Session
+          History</button>
+        <div class="nav-label">My Practice</div>
+        <button class="nav-item" onclick="switchView('profile',this)"><span class="ico">👤</span> My Profile</button>
+        <button class="nav-item" onclick="switchView('availability',this)"><span class="ico">🕐</span>
+          Availability</button>
+        <button class="nav-item" onclick="switchView('pricing',this)"><span class="ico">💰</span> Pricing</button>
+      </nav>
+      <div class="sb-footer">
+        <button class="btn-logout" onclick="doLogout()"><span>🚪</span> Sign Out</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="topbar-title" id="pageTitle">Dashboard</div>
+        <div class="topbar-date" id="todayDate"></div>
+      </div>
+      <div class="content">
+
+        <!-- OVERVIEW -->
+        <div class="view active" id="view-overview">
+          <div class="stats-grid">
+            <div class="stat-card hl">
+              <div class="stat-lbl">Total Sessions</div>
+              <div class="stat-val" id="s-total">0</div>
+              <div class="stat-sub">All time</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-lbl">Pending</div>
+              <div class="stat-val" id="s-pending">0</div>
+              <div class="stat-sub">Awaiting action</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-lbl">Confirmed</div>
+              <div class="stat-val" id="s-confirmed">0</div>
+              <div class="stat-sub">Upcoming</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-lbl">Est. Earnings</div>
+              <div class="stat-val" id="s-earn">₹0</div>
+              <div class="stat-sub">Confirmed + Done</div>
+            </div>
+          </div>
+          <div class="sec-hd">
+            <h3>Recent Requests</h3>
+            <button class="btn-outline" style="font-size:.8rem;padding:6px 13px"
+              onclick="switchView('requests',null)">View all →</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>Date</th>
+                  <th>Concern</th>
+                  <th>Stress</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="overviewTbody">
+                <tr class="empty-row">
+                  <td colspan="6">Loading…</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- REQUESTS -->
+        <div class="view" id="view-requests">
+          <div class="table-wrap">
+            <div class="tbl-filters">
+              <button class="filter-tab active" onclick="setFilter('pending',this)">Pending</button>
+              <button class="filter-tab" onclick="setFilter('confirmed',this)">Confirmed</button>
+              <button class="filter-tab" onclick="setFilter('completed',this)">Completed</button>
+              <button class="filter-tab" onclick="setFilter('cancelled',this)">Cancelled</button>
+              <button class="filter-tab" onclick="setFilter('all',this)">All</button>
+              <input class="search-inp" type="text" placeholder="Search by name…" oninput="setSearch(this.value)">
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Ref</th>
+                  <th>Student</th>
+                  <th>Contact</th>
+                  <th>Date</th>
+                  <th>Stress</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="requestsTbody">
+                <tr class="empty-row">
+                  <td colspan="7">Loading…</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- HISTORY -->
+        <div class="view" id="view-history">
+          <div class="table-wrap">
+            <div class="tbl-filters">
+              <span style="font-weight:600;font-size:.86rem">Session History</span>
+              <input class="search-inp" type="text" placeholder="Search…" oninput="setHistSearch(this.value)">
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Ref</th>
+                  <th>Student</th>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>Fee</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="historyTbody">
+                <tr class="empty-row">
+                  <td colspan="6">Loading…</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- PROFILE -->
+        <div class="view" id="view-profile">
+          <div class="card">
+            <div class="card-title">My Practitioner Profile</div>
+            <div class="prof-grid">
+              <div class="fg"><label class="form-label">Full Name</label><input type="text" class="form-input"
+                  id="pName" placeholder="Dr. Name" /></div>
+              <div class="fg"><label class="form-label">Specialisation</label><input type="text" class="form-input"
+                  id="pSpec" placeholder="Student Stress & Anxiety" /></div>
+              <div class="fg"><label class="form-label">Credentials</label><input type="text" class="form-input"
+                  id="pCreds" placeholder="M.Phil Clinical Psychology" /></div>
+              <div class="fg"><label class="form-label">Session Fee (₹)</label><input type="number" class="form-input"
+                  id="pFee" min="0" placeholder="500" /></div>
+              <div class="fg full"><label class="form-label">Professional Bio</label><textarea class="form-input"
+                  id="pBio" rows="4" placeholder="Brief description of your practice…"></textarea></div>
+            </div>
+            <div style="margin-top:18px"><button class="btn-primary" onclick="saveProfile()">Save Profile</button></div>
+          </div>
+        </div>
+
+        <!-- AVAILABILITY -->
+        <div class="view" id="view-availability">
+          <div class="card" style="margin-bottom:18px">
+            <div class="card-title">Available Days</div>
+            <div class="avail-grid" id="daysGrid"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Time Slots</div>
+            <div class="time-grid" id="timeGrid"></div>
+            <div style="margin-top:18px"><button class="btn-primary" onclick="saveAvailability()">Save
+                Availability</button></div>
+          </div>
+        </div>
+
+        <!-- PRICING -->
+        <div class="view" id="view-pricing">
+          <div class="card" style="max-width:440px">
+            <div class="card-title">Consultation Pricing</div>
+            <div style="margin-bottom:16px">
+              <label class="form-label">Price per Session (₹)</label>
+              <input type="number" class="form-input" id="priceFee" min="0" placeholder="500" />
+              <p style="font-size:.78rem;color:var(--text-light);margin-top:5px">Applies to all new bookings. Existing
+                confirmed sessions keep their original price.</p>
+            </div>
+            <div>
+              <label class="form-label">Session Types Offered</label>
+              <div style="display:flex;flex-direction:column;gap:10px;margin-top:6px">
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:.88rem"><input
+                    type="checkbox" id="typeChat" value="chat"> 💬 Chat</label>
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:.88rem"><input
+                    type="checkbox" id="typeVideo" value="video"> 🎥 Video Call</label>
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:.88rem"><input
+                    type="checkbox" id="typePhone" value="phone"> 📞 Phone</label>
+              </div>
+            </div>
+            <div style="margin-top:22px"><button class="btn-primary" onclick="savePricing()">Update Pricing</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Reject modal -->
+  <div class="modal-bg" id="rejectModal">
+    <div class="modal">
+      <h3>Decline Request?</h3>
+      <p>This marks the student's request as cancelled. They may submit a new request later. This cannot be undone.</p>
+      <div class="modal-acts">
+        <button class="btn-outline" onclick="closeModal('rejectModal')">Cancel</button>
+        <button class="btn-sm btn-rj" style="padding:9px 16px;font-size:.86rem" onclick="confirmReject()">Yes,
+          Decline</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+
+    (function authGuard() {
+      // Simple client-side gate — replace with real JWT check once backend exists
+      const isAuthed = sessionStorage.getItem('psych_authed');
+      if (!isAuthed) {
+        // Show a basic login prompt instead of just redirecting
+        document.body.style.display = 'none';
+        const pin = prompt('Enter psychologist access code:');
+        // Change '0000' to a real code — or remove entirely when backend auth is added
+        if (pin !== '0000') {
+          window.location.href = 'index.html';
+          return;
+        }
+        sessionStorage.setItem('psych_authed', '1');
+        document.body.style.display = '';
+      }
+    })();
+
+    const SB_URL = 'https://qbrdfnhksqoaagstvdzk.supabase.co';
+    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFicmRmbmhrc3FvYWFnc3R2ZHprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3ODc5NDcsImV4cCI6MjA4ODM2Mzk0N30.GHhXkO63AMUrRSUHW9GtjD27AjBDZ1PIsfeBWRgNqgQ';
+    const sb = window.supabase.createClient(SB_URL, SB_KEY);
+
+    const NOTIFY_FN = 'https://qbrdfnhksqoaagstvdzk.supabase.co/functions/v1/notify-booking';
+
+    async function notifyEmail(payload) {
+      try {
+        await fetch(NOTIFY_FN, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } catch (e) { console.warn('Email notification skipped:', e.message); }
+    }
+
+
+    let me = null, psychProfile = null, allReqs = [], filterSt = 'pending', filterSr = '', histSr = '', rejectId = null;
+    const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const TIMES = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'];
+
+    // ── Auth Guard ──────────────────────────────────────────────
+    (async () => {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) return go('psychologist_login.html');
+
+      me = session.user;
+      const { data: uRow } = await sb.from('users').select('role').eq('id', me.id).single();
+      if (!uRow || (uRow.role !== 'psychologist' && uRow.role !== 'admin')) {
+        // Show access denied message before redirect
+        const guard = document.getElementById('authGuard');
+        guard.innerHTML = `
+      <div style="text-align:center;max-width:400px;padding:20px;">
+        <div style="font-size:3rem;margin-bottom:16px;">🚫</div>
+        <h3 style="font-size:1.2rem;font-weight:700;margin-bottom:10px;color:var(--red,#dc2626);">Access Denied</h3>
+        <p style="color:var(--text-light,#6b7280);font-size:.9rem;line-height:1.6;margin-bottom:20px;">
+          This portal is for verified psychologists only.
+          ${uRow?.role === 'student' ? 'As a student, please use the student dashboard.' : 'Please log in with a practitioner account.'}
+        </p>
+        <a href="${uRow?.role === 'student' ? 'student_dashboard.html' : 'psychologist_login.html'}" 
+           style="display:inline-block;padding:10px 24px;background:var(--ink,#0f0e17);color:#fff;border-radius:10px;text-decoration:none;font-weight:600;font-size:.9rem;">
+          ${uRow?.role === 'student' ? 'Go to Student Dashboard' : 'Go to Login'}
+        </a>
+      </div>`;
+        await sb.auth.signOut();
+        return;
+      }
+
+      document.getElementById('authGuard').style.display = 'none';
+      document.getElementById('dashLayout').style.display = 'flex';
+      await boot();
+
+      sb.auth.onAuthStateChange(ev => { if (ev === 'SIGNED_OUT') go('psychologist_login.html'); });
+    })();
+
+    function go(url) { window.location.href = url; }
+
+    // ── Boot ────────────────────────────────────────────────────
+    async function boot() {
+      document.getElementById('todayDate').textContent =
+        new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+      const { data: p } = await sb.from('psychologist_profiles').select('*').eq('user_id', me.id).single();
+      if (p) {
+        psychProfile = p;
+        populateSidebar(p);
+        fillProfileForm(p);
+        fillPricingForm(p);
+      }
+
+      const { data: avail } = await sb.from('availability_slots').select('*').eq('psychologist_id', p?.id);
+      buildAvailUI(avail || []);
+      await loadReqs();
+    }
+
+    // ── Requests ────────────────────────────────────────────────
+    async function loadReqs() {
+      if (!psychProfile) return;
+      const { data, error } = await sb.from('session_requests').select('*')
+        .eq('psychologist_id', psychProfile.id).order('created_at', { ascending: false });
+      if (error) { console.error(error); return; }
+      allReqs = data || [];
+      renderStats(); renderOverview(); renderRequests(); renderHistory(); updateBadge();
+    }
+
+    // ── Stats ───────────────────────────────────────────────────
+    function renderStats() {
+      document.getElementById('s-total').textContent = allReqs.length;
+      document.getElementById('s-pending').textContent = allReqs.filter(r => r.status === 'pending').length;
+      document.getElementById('s-confirmed').textContent = allReqs.filter(r => r.status === 'confirmed').length;
+      const earn = allReqs.filter(r => r.status === 'confirmed' || r.status === 'completed').reduce((s, r) => s + (r.fee_inr || 0), 0);
+      document.getElementById('s-earn').textContent = '₹' + earn.toLocaleString('en-IN');
+    }
+    function updateBadge() {
+      const n = allReqs.filter(r => r.status === 'pending').length;
+      const el = document.getElementById('pendingBadge');
+      el.textContent = n; el.style.display = n > 0 ? 'inline-block' : 'none';
+    }
+
+    // ── Render tables ───────────────────────────────────────────
+    function renderOverview() {
+      const rows = allReqs.slice(0, 5);
+      document.getElementById('overviewTbody').innerHTML = rows.length === 0
+        ? `<tr class="empty-row"><td colspan="6">No requests yet. Student bookings will appear here.</td></tr>`
+        : rows.map(r => `<tr>
+        <td class="td-n">${esc(r.student_name)}</td>
+        <td class="td-m">${fd(r.preferred_date)}</td>
+        <td class="td-c td-m">${esc(r.concern || '—')}</td>
+        <td>${spill(r.stress_level)}</td>
+        <td>${pill(r.status)}</td>
+        <td style="display:flex;gap:5px">${abts(r)}</td>
+      </tr>`).join('');
+    }
+
+    function renderRequests() {
+      let rows = allReqs.filter(r => filterSt === 'all' || r.status === filterSt);
+      if (filterSr) rows = rows.filter(r => r.student_name?.toLowerCase().includes(filterSr));
+      document.getElementById('requestsTbody').innerHTML = rows.length === 0
+        ? `<tr class="empty-row"><td colspan="7">No requests matching this filter.</td></tr>`
+        : rows.map(r => `<tr>
+        <td style="font-size:.76rem;color:var(--text-light)">${esc(r.booking_ref)}</td>
+        <td class="td-n">${esc(r.student_name)}</td>
+        <td class="td-m">${mask(r.student_contact)}</td>
+        <td class="td-m">${fd(r.preferred_date)}</td>
+        <td>${spill(r.stress_level)}</td>
+        <td>${pill(r.status)}</td>
+        <td style="display:flex;gap:5px;align-items:center">${abts(r)}</td>
+      </tr>`).join('');
+    }
+
+    function renderHistory() {
+      let rows = [...allReqs];
+      if (histSr) rows = rows.filter(r => r.student_name?.toLowerCase().includes(histSr.toLowerCase()));
+      rows.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      document.getElementById('historyTbody').innerHTML = rows.length === 0
+        ? `<tr class="empty-row"><td colspan="6">No session history yet.</td></tr>`
+        : rows.map(r => `<tr>
+        <td style="font-size:.76rem;color:var(--text-light)">${esc(r.booking_ref)}</td>
+        <td class="td-n">${esc(r.student_name)}</td>
+        <td class="td-m">${fd(r.preferred_date)}</td>
+        <td class="td-m">${esc(r.session_type || 'chat')}</td>
+        <td style="font-weight:600">₹${(r.fee_inr || 0).toLocaleString('en-IN')}</td>
+        <td>${pill(r.status)}</td>
+      </tr>`).join('');
+    }
+
+    // ── Action buttons ──────────────────────────────────────────
+    function abts(r) {
+      if (r.status === 'pending') return `<button class="btn-sm btn-ac" onclick="accept('${r.id}')">Accept</button><button class="btn-sm btn-rj" onclick="openReject('${r.id}')">Reject</button>`;
+      if (r.status === 'confirmed') return `<button class="btn-sm btn-cp" onclick="complete('${r.id}')">Done</button>`;
+      return `<span style="color:var(--text-light);font-size:.78rem">—</span>`;
+    }
+
+    // ── Supabase updates ────────────────────────────────────────
+    async function updStatus(id, status) {
+      const { error } = await sb.from('session_requests').update({ status, updated_at: new Date().toISOString() })
+        .eq('id', id).eq('psychologist_id', psychProfile.id);
+      if (error) { toast('Error: ' + error.message, 'err'); return false; }
+      return true;
+    }
+    async function accept(id) {
+      if (await updStatus(id, 'confirmed')) {
+        toast('Session confirmed ✓', 'ok');
+        const req = allReqs.find(r => r.id === id);
+        if (req) await notifyEmail({
+          event: 'booking_confirmed', booking_ref: req.booking_ref,
+          student_name: req.student_name, student_email: req.student_contact,
+          psychologist_name: psychProfile?.display_name
+        });
+        await loadReqs();
+      }
+    }
+    async function complete(id) { if (await updStatus(id, 'completed')) { toast('Marked as done ✓', 'ok'); await loadReqs(); } }
+    function openReject(id) { rejectId = id; document.getElementById('rejectModal').classList.add('active'); }
+    async function confirmReject() {
+      closeModal('rejectModal');
+      if (rejectId && await updStatus(rejectId, 'cancelled')) {
+        toast('Request declined', 'err');
+        const req = allReqs.find(r => r.id === rejectId);
+        if (req) await notifyEmail({
+          event: 'booking_cancelled', booking_ref: req.booking_ref,
+          student_name: req.student_name, student_email: req.student_contact
+        });
+        await loadReqs();
+      }
+      rejectId = null;
+    }
+
+    // ── Profile ──────────────────────────────────────────────────
+    function populateSidebar(p) {
+      document.getElementById('sbAvatar').textContent = p.avatar_initials || 'DR';
+      document.getElementById('sbName').textContent = p.display_name || 'Dr. Name';
+      document.getElementById('sbSpec').textContent = p.specialisation || 'Psychologist';
+    }
+    function fillProfileForm(p) {
+      document.getElementById('pName').value = p.display_name || '';
+      document.getElementById('pSpec').value = p.specialisation || '';
+      document.getElementById('pCreds').value = p.credentials || '';
+      document.getElementById('pFee').value = p.fee_inr || 500;
+      document.getElementById('pBio').value = p.bio || '';
+    }
+    async function saveProfile() {
+      if (!psychProfile) return;
+      const name = document.getElementById('pName').value.trim();
+      const upd = {
+        display_name: name, specialisation: document.getElementById('pSpec').value.trim(),
+        credentials: document.getElementById('pCreds').value.trim(), fee_inr: parseInt(document.getElementById('pFee').value) || 0,
+        bio: document.getElementById('pBio').value.trim(), avatar_initials: initials(name), updated_at: new Date().toISOString()
+      };
+      const { error } = await sb.from('psychologist_profiles').update(upd).eq('id', psychProfile.id).eq('user_id', me.id);
+      if (error) { toast('Save failed: ' + error.message, 'err'); return; }
+      psychProfile = { ...psychProfile, ...upd }; populateSidebar(psychProfile); toast('Profile saved ✓', 'ok');
+    }
+
+    // ── Availability ──────────────────────────────────────────────
+    function buildAvailUI(slots) {
+      const ad = slots.filter(s => s.is_active).map(s => s.day_of_week);
+      const at = slots.filter(s => s.is_active).map(s => s.slot_time?.slice(0, 5));
+      document.getElementById('daysGrid').innerHTML = DAYS.map(d =>
+        `<div class="avail-day ${ad.includes(d) ? 'active' : ''}" onclick="this.classList.toggle('active')" data-day="${d}">${d.slice(0, 3)}</div>`).join('');
+      document.getElementById('timeGrid').innerHTML = TIMES.map(t =>
+        `<div class="time-slot ${at.includes(t) ? 'active' : ''}" onclick="this.classList.toggle('active')" data-time="${t}">${t}</div>`).join('');
+    }
+    async function saveAvailability() {
+      if (!psychProfile) return;
+      const pid = psychProfile.id;
+      const selD = [...document.querySelectorAll('#daysGrid .avail-day.active')].map(el => el.dataset.day);
+      const selT = [...document.querySelectorAll('#timeGrid .time-slot.active')].map(el => el.dataset.time);
+      await sb.from('availability_slots').delete().eq('psychologist_id', pid);
+      const ins = []; selD.forEach(d => selT.forEach(t => ins.push({ psychologist_id: pid, day_of_week: d, slot_time: t + ':00', is_active: true })));
+      if (ins.length > 0) { const { error } = await sb.from('availability_slots').insert(ins); if (error) { toast('Error: ' + error.message, 'err'); return; } }
+      toast('Availability saved ✓', 'ok');
+    }
+
+    // ── Pricing ──────────────────────────────────────────────────
+    function fillPricingForm(p) {
+      document.getElementById('priceFee').value = p.fee_inr || 500;
+      const t = p.session_types || ['chat', 'video', 'phone'];
+      document.getElementById('typeChat').checked = t.includes('chat');
+      document.getElementById('typeVideo').checked = t.includes('video');
+      document.getElementById('typePhone').checked = t.includes('phone');
+    }
+    async function savePricing() {
+      if (!psychProfile) return;
+      const fee = parseInt(document.getElementById('priceFee').value) || 0;
+      const types = ['chat', 'video', 'phone'].filter(t => document.getElementById('type' + t[0].toUpperCase() + t.slice(1)).checked);
+      const { error } = await sb.from('psychologist_profiles').update({ fee_inr: fee, session_types: types, updated_at: new Date().toISOString() }).eq('id', psychProfile.id).eq('user_id', me.id);
+      if (error) { toast('Error: ' + error.message, 'err'); return; }
+      psychProfile.fee_inr = fee; psychProfile.session_types = types;
+      document.getElementById('pFee').value = fee;
+      toast('Pricing updated ✓', 'ok');
+    }
+
+    // ── UI helpers ───────────────────────────────────────────────
+    function switchView(v, el) {
+      document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
+      document.getElementById('view-' + v).classList.add('active');
+      document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
+      if (el) el.classList.add('active');
+      const map = { overview: 'Dashboard', requests: 'Incoming Requests', history: 'Session History', profile: 'My Profile', availability: 'Availability', pricing: 'Pricing' };
+      document.getElementById('pageTitle').textContent = map[v] || v;
+      if (window.innerWidth <= 768) toggleSidebar();
+    }
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('active');
+      document.getElementById('sidebarOverlay').classList.toggle('active');
+    }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+    async function doLogout() { await sb.auth.signOut(); go('psychologist_login.html'); }
+
+    let _tt;
+    function toast(msg, type = '') {
+      const el = document.getElementById('toast');
+      el.textContent = msg; el.className = 'toast show ' + (type === 'ok' ? 'ok' : type === 'err' ? 'err' : '');
+      clearTimeout(_tt); _tt = setTimeout(() => el.classList.remove('show'), 3000);
+    }
+
+    function setFilter(st, el) { filterSt = st; document.querySelectorAll('#view-requests .filter-tab').forEach(b => b.classList.remove('active')); if (el) el.classList.add('active'); renderRequests(); }
+    function setSearch(v) { filterSr = v.toLowerCase(); renderRequests(); }
+    function setHistSearch(v) { histSr = v; renderHistory(); }
+
+    function fd(d) { if (!d) return '—'; try { return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }); } catch { return d; } }
+    function mask(c) { if (!c) return '—'; if (c.includes('@')) { const [u, d] = c.split('@'); return u.length <= 1 ? c : u[0] + '***@' + d; } const n = c.replace(/\D/g, ''); return n.length >= 10 ? n.slice(0, 2) + '******' + n.slice(-2) : c; }
+    function pill(s) { return `<span class="pill ${s}">${s}</span>`; }
+    function spill(s) { if (!s) return '<span class="td-m">—</span>'; const m = { Low: 'confirmed', Medium: 'pending', High: 'cancelled', Critical: 'cancelled' }; return `<span class="pill ${m[s] || 'pending'}">${s}</span>`; }
+    function esc(s) { return s ? String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') : '' }
+    function initials(name) { const c = name.replace(/^(Dr\.|Mr\.|Ms\.|Mrs\.)\s*/i, '').trim(); const p = c.split(/\s+/); return (p.length === 1 ? p[0][0] : (p[0][0] + p[p.length - 1][0])).toUpperCase(); }
+  </script>
+    <script src="../shared/crisis-support.js"></script>
+</body>
+
+</html>
+
+

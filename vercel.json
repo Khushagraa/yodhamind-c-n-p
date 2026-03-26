@@ -1,0 +1,121 @@
+{
+  "version": 2,
+  "name": "yodhamind",
+
+  "builds": [
+    {
+      "src":  "api/server.js",
+      "use":  "@vercel/node",
+      "config": { "includeFiles": ["api/**"] }
+    },
+    {
+      "src": "pages/**/*.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "public/**",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "shared/**",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "games/**/*.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "tools/**/*.html",
+      "use": "@vercel/static"
+    }
+  ],
+
+  "routes": [
+    {
+      "src":  "/api/(.*)",
+      "dest": "/api/server.js"
+    },
+    {
+      "src":  "^/$",
+      "dest": "/pages/index.html"
+    },
+    {
+      "src":  "^/dashboard$",
+      "dest": "/pages/dashboard.html"
+    },
+    {
+      "src":  "^/assessment$",
+      "dest": "/pages/assessment.html"
+    },
+    {
+      "src":  "^/journal$",
+      "dest": "/pages/journal.html"
+    },
+    {
+      "src":  "^/connect$",
+      "dest": "/pages/connect.html"
+    },
+    {
+      "src":  "^/community$",
+      "dest": "/pages/community.html"
+    },
+    {
+      "src":  "^/games$",
+      "dest": "/pages/games.html"
+    },
+    {
+      "src":  "^/pages/(.+\\.html)$",
+      "dest": "/pages/$1"
+    },
+    {
+      "src":  "^/games/(.+\\.html)$",
+      "dest": "/games/$1"
+    },
+    {
+      "src":  "^/tools/(.+\\.html)$",
+      "dest": "/tools/$1"
+    },
+    {
+      "src":     "^/shared/(.+\\.js)$",
+      "dest":    "/shared/$1",
+      "headers": { "cache-control": "public, max-age=3600, must-revalidate" }
+    },
+    {
+      "src":     "^/public/(.+)$",
+      "dest":    "/public/$1",
+      "headers": { "cache-control": "public, max-age=31536000, immutable" }
+    },
+    {
+      "src":    "/(.*)",
+      "dest":   "/pages/index.html",
+      "status": 404
+    },
+    { "src": "^/student-auth$",      "dest": "/pages/student_auth.html" },
+{ "src": "^/student-dashboard$", "dest": "/pages/student_dashboard.html" },
+{ "src": "^/chat$",              "dest": "/pages/chat.html" }
+  ],
+
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff"                        },
+        { "key": "X-Frame-Options",        "value": "DENY"                           },
+        { "key": "X-XSS-Protection",       "value": "1; mode=block"                  },
+        { "key": "Referrer-Policy",        "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy",     "value": "camera=(), microphone=(), geolocation=()" }
+      ]
+    }
+  ],
+
+  "regions": ["bom1"],
+
+  "env": {
+    "NODE_ENV": "production"
+  },
+
+  "github": {
+    "silent":    true,
+    "autoAlias": true
+  }
+}

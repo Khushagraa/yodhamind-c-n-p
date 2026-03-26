@@ -1,0 +1,737 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yodha Focus Realm - Study Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- Design System --- */
+        :root {
+            --primary: #667eea;
+            --bg-light: #fbfdff;
+            --text-main: #2d3748;
+            --text-sub: #718096;
+            --danger: #e53e3e;
+            --success: #48bb78;
+            --card-bg: #ffffff;
+        }
+
+        body.dark-mode {
+            --bg-light: #0f172a;
+            --text-main: #f1f5f9;
+            --text-sub: #94a3b8;
+            --card-bg: #1e293b;
+        }
+
+        * { box-sizing: border-box; user-select: none; outline: none; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg-light);
+            font-family: 'Poppins', sans-serif;
+            color: var(--text-main);
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            transition: background 0.3s ease;
+        }
+
+        /* --- Zen Mode --- */
+        /* Dim everything EXCEPT the modal and vital elements */
+        body.zen-mode nav, 
+        body.zen-mode .stats-row,
+        body.zen-mode .forest-panel,
+        body.zen-mode .setup-container {
+            opacity: 0.1;
+            pointer-events: none;
+            filter: blur(4px);
+            transition: all 0.5s;
+        }
+        body.zen-mode .timer-container { transform: scale(1.1); z-index: 50; }
+
+        body.zen-mode #giveUpBtn {
+            opacity: 0.4;
+            font-size: 0.75rem;
+            padding: 6px 16px;
+        }
+
+        /* --- Navigation --- */
+        nav {
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card-bg);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .logo { font-weight: 700; font-size: 1.2rem; color: var(--primary); }
+        
+        .btn-icon {
+            background: transparent; border: 1px solid var(--text-sub);
+            color: var(--text-main); padding: 5px 10px; border-radius: 15px;
+            cursor: pointer; transition: 0.2s;
+        }
+        .btn-icon:hover { background: var(--primary); color: white; border-color: var(--primary); }
+        .btn-exit { color: var(--danger); border-color: var(--danger); }
+        .btn-exit:hover { background: var(--danger); color: white; }
+
+        /* --- Stats Row --- */
+        .stats-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .stat-val { font-size: 1.2rem; font-weight: 700; color: var(--primary); display: block; }
+        .stat-label { font-size: 0.75rem; color: var(--text-sub); text-transform: uppercase; letter-spacing: 1px; }
+
+        /* --- Timer Area --- */
+        .main-layout {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            position: relative;
+        }
+
+        .timer-container {
+            position: relative;
+            width: 280px; height: 280px;
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .progress-ring { transform: rotate(-90deg); }
+        .progress-ring__circle {
+            transition: stroke-dashoffset 1s linear;
+            transform-origin: 50% 50%;
+            stroke: var(--primary);
+        }
+
+        .growth-stage {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .tree-icon { font-size: 5rem; transition: transform 0.3s; margin-bottom: 10px; }
+        .time-text { font-size: 3.5rem; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+        .task-label { font-size: 0.9rem; color: var(--text-sub); margin-top: 5px; text-align: center; max-width: 200px; word-wrap: break-word;}
+
+        /* Controls */
+        .setup-container {
+            display: flex; flex-direction: column; gap: 15px; width: 100%; max-width: 320px; align-items: center; padding: 0 15px;
+        }
+
+        .task-input {
+            width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--text-sub);
+            background: transparent; color: var(--text-main); font-family: inherit; font-size: 0.95rem;
+            text-align: center; outline: none; transition: border-color 0.2s;
+        }
+        .task-input:focus { border-color: var(--primary); }
+
+        .duration-pills {
+            display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; width: 100%;
+        }
+
+        .btn-pill {
+            padding: 6px 12px; border-radius: 20px; border: 1px solid var(--text-sub);
+            background: transparent; color: var(--text-main); cursor: pointer;
+            transition: 0.2s; font-size: 0.85rem; font-family: inherit;
+        }
+        .btn-pill.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .controls-area { display: flex; gap: 15px; margin-top: 5px; }
+
+        .btn-main {
+            background: var(--primary); color: white; border: none;
+            padding: 12px 40px; border-radius: 30px; font-weight: 600;
+            font-size: 1rem; cursor: pointer; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            transition: transform 0.2s;
+        }
+        .btn-main:hover { transform: translateY(-2px); }
+
+        .btn-circle {
+            width: 45px; height: 45px; border-radius: 50%;
+            background: var(--card-bg); border: 1px solid var(--text-sub);
+            color: var(--text-sub); font-size: 1.2rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: 0.2s;
+        }
+        .btn-circle.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        /* Soft Pill Buttons */
+        .nav-btn-styled {
+            background: var(--card-bg);
+            border: 1px solid rgba(0,0,0,0.05);
+            color: var(--text-sub);
+            width: 40px; height: 40px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        }
+        .nav-btn-styled:hover {
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px rgba(0,0,0,0.05);
+            color: var(--primary);
+        }
+        .nav-btn-styled.home-active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; border: none;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .nav-btn-styled.exit-active:hover {
+            background: #fff5f5; color: #e53e3e; border-color: #feb2b2;
+        }
+
+        /* Fixed Give Up Button */
+        #giveUpBtn {
+            background: rgba(229, 62, 62, 0.1); 
+            border: 2px solid var(--danger);
+            color: var(--danger); 
+            padding: 10px 24px; 
+            border-radius: 25px;
+            cursor: pointer; 
+            display: none; 
+            font-weight: 600; 
+            margin-top: 20px;
+            z-index: 100;
+            position: relative;
+            pointer-events: auto;
+            transition: all 0.2s;
+        }
+        #giveUpBtn:hover { background: var(--danger); color: white; transform: translateY(-2px); }
+
+        /* Forest */
+        .forest-panel {
+            width: 90%; max-width: 600px;
+            background: var(--card-bg);
+            border-radius: 20px; padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        .forest-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9rem; font-weight: 600; }
+        .forest-grid {
+            display: flex; flex-wrap: wrap; gap: 8px;
+            max-height: 100px; overflow-y: auto;
+        }
+        .tree-item { font-size: 1.5rem; animation: popIn 0.4s; cursor: help; }
+        @keyframes popIn { from{transform:scale(0);} to{transform:scale(1);} }
+
+        /* Modal Styling */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 2000;
+            display: none;
+            align-items: center; justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        .modal-box {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            color: var(--text-main);
+            max-width: 320px;
+            width: 90%;
+            animation: slideUp 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+        }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
+        .modal-btn-row { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
+        .btn-modal { padding: 10px 20px; border-radius: 20px; border: none; cursor: pointer; font-weight: 500; font-family: inherit; }
+        .btn-cancel { background: #edf2f7; color: #4a5568; transition: 0.2s; }
+        .btn-cancel:hover { background: #e2e8f0; }
+        .btn-danger { background: var(--danger); color: white; transition: 0.2s; }
+        .btn-danger:hover { background: #c53030; }
+
+    </style>
+</head>
+<body>
+
+  <nav>
+    <div class="logo">🧠 YodhaMind — Focus Realm</div>
+    <div class="nav-controls" style="display:flex; gap:10px;">
+        <button class="nav-btn-styled" onclick="toggleTheme()" title="Theme">🌗</button>
+        <button class="nav-btn-styled" onclick="toggleZen()" title="Zen">👁️</button>
+        <button class="nav-btn-styled exit-active" onclick="window.location.href='../games.html'" title="Exit">✕</button>
+    </div>
+</nav>
+
+<!-- Floating Zen Exit Button (For Manual Mode) -->
+<button class="nav-btn-styled" id="floatingZenBtn" onclick="toggleZen()" title="Exit Zen" style="display: none; position: fixed; top: 15px; right: 20px; z-index: 2000; color: var(--primary); border: 1px solid var(--primary); box-shadow: 0 4px 15px rgba(0,0,0,0.1);">👁️</button>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <span class="stat-val" id="totalHours">0.0</span>
+            <span class="stat-label">Hours Focused</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-val" id="totalSessions">0</span>
+            <span class="stat-label">Sessions Done</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-val" id="currentStreak">0</span>
+            <span class="stat-label">Day Streak 🔥</span>
+        </div>
+    </div>
+
+    <div class="main-layout">
+        
+        <div class="timer-container">
+            <svg class="progress-ring" width="280" height="280">
+                <circle stroke="#e2e8f0" stroke-width="8" fill="transparent" r="125" cx="140" cy="140"/>
+                <circle class="progress-ring__circle" id="progressCircle" stroke="#667eea" stroke-width="8" fill="transparent" r="125" cx="140" cy="140"/>
+            </svg>
+
+            <div class="growth-stage">
+                <div class="tree-icon" id="treeIcon">🌱</div>
+                <div class="time-text" id="timeDisplay">25:00</div>
+                <div class="task-label" id="statusText">Ready to Grow</div>
+            </div>
+        </div>
+
+        <div class="setup-container" id="setupContainer">
+            <input type="text" id="taskInput" class="task-input" placeholder="What are you working on? (optional)" maxlength="40">
+            <div class="duration-pills">
+                <button class="btn-pill" onclick="setDuration(10, this)">10 min 🌿</button>
+                <button class="btn-pill active" onclick="setDuration(25, this)">25 min 🌲</button>
+                <button class="btn-pill" onclick="setDuration(50, this)">50 min 🌳</button>
+                <button class="btn-pill" onclick="setDuration(90, this)">90 min 🏔️</button>
+            </div>
+            <div class="controls-area" id="startControls">
+                <button class="btn-main" onclick="startSession()">Start Focus</button>
+                <button class="btn-circle" id="noiseBtn" onclick="toggleNoise()" title="White Noise">🎧</button>
+            </div>
+        </div>
+
+        <button id="giveUpBtn" onclick="showGiveUpModal()">Give Up</button>
+    </div>
+
+    <div class="forest-panel">
+        <div class="forest-header">
+            <span>Today's Forest</span>
+            <span style="color:#718096">Recent</span>
+        </div>
+        <div class="forest-grid" id="forestGrid"></div>
+    </div>
+
+    <!-- Give Up Modal -->
+    <div class="modal-overlay" id="giveUpModal">
+        <div class="modal-box">
+            <h3 style="margin-bottom: 10px;">Stop Growing?</h3>
+            <p style="color: var(--text-sub); font-size: 0.9rem;">If you give up now, your tree will wither and this session won't count.</p>
+            <div class="modal-btn-row">
+                <button class="btn-modal btn-cancel" onclick="closeModal()">Keep Focusing</button>
+                <button class="btn-modal btn-danger" onclick="confirmGiveUp()">Give Up</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Break Modal -->
+    <div class="modal-overlay" id="breakModal">
+        <div class="modal-box">
+            <h3 style="margin-bottom: 10px;" id="breakTitle">🌲 You've earned a 5-minute break!</h3>
+            <div id="breakTimerDisplay" style="font-size: 2.5rem; font-weight: 700; color: var(--primary); margin: 15px 0;">05:00</div>
+            <p style="color: var(--text-sub); font-size: 0.9rem; margin-bottom: 15px;">Relax or play a quick game:</p>
+            <div style="display:flex; flex-direction:column; gap:10px; margin-bottom: 20px;">
+                <button class="btn-modal btn-cancel" onclick="window.location.href='../games/Yodhaflow.html'">Yodha Flow</button>
+                <button class="btn-modal btn-cancel" onclick="window.location.href='../games/cosmic_shredder_game.html'">Cosmic Shredder</button>
+                <button class="btn-modal btn-cancel" onclick="window.location.href='../games/yodha_mandala.html'">Yodha Mandala</button>
+            </div>
+            <button class="btn-main" style="width:100%; padding: 10px;" id="nextSessionBtn" onclick="closeBreakModal()">Skip Break</button>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * Focus Realm - Study Tracker Logic
+         */
+
+        // Config
+        let currentDuration = 25;
+        let FOCUS_MINUTES = 25;
+        let FOCUS_SECONDS = FOCUS_MINUTES * 60;
+        let timeLeft = FOCUS_SECONDS;
+        let timerId = null;
+        let isRunning = false;
+
+        let breakTimerId = null;
+        let breakTimeLeft = 5 * 60;
+        
+        // Data Store
+        let data = {
+            totalMinutes: 0,
+            sessions: 0,
+            streak: 0,
+            lastLogin: '',
+            forest: []
+        };
+
+        // Audio
+        let audioCtx = null;
+        let noiseNode = null;
+
+        function getAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            return audioCtx;
+        }
+
+        // DOM Elements
+        const els = {
+            time: document.getElementById('timeDisplay'),
+            circle: document.getElementById('progressCircle'),
+            tree: document.getElementById('treeIcon'),
+            status: document.getElementById('statusText'),
+            setup: document.getElementById('setupContainer'),
+            giveUp: document.getElementById('giveUpBtn'),
+            forest: document.getElementById('forestGrid'),
+            stats: {
+                hours: document.getElementById('totalHours'),
+                sessions: document.getElementById('totalSessions'),
+                streak: document.getElementById('currentStreak')
+            },
+            modal: document.getElementById('giveUpModal'),
+            breakModal: document.getElementById('breakModal'),
+            breakTimer: document.getElementById('breakTimerDisplay'),
+            breakTitle: document.getElementById('breakTitle'),
+            nextBtn: document.getElementById('nextSessionBtn')
+        };
+
+        const radius = 125;
+        const circumference = 2 * Math.PI * radius;
+
+        function init() {
+            // Theme persistence
+            if(localStorage.getItem('ym_theme') === 'dark') {
+                document.body.classList.add('dark-mode');
+            }
+
+            els.circle.style.strokeDasharray = `${circumference}`;
+            els.circle.style.strokeDashoffset = `${circumference}`;
+
+            loadData();
+            updateStatsUI();
+            renderForest();
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem('yodha_focus_data');
+            if(saved) data = JSON.parse(saved);
+        }
+
+        function saveData() {
+            localStorage.setItem('yodha_focus_data', JSON.stringify(data));
+        }
+
+        // --- Timer Logic ---
+
+        function setDuration(mins, btnElement) {
+            currentDuration = mins;
+            FOCUS_MINUTES = mins;
+            FOCUS_SECONDS = mins * 60;
+            
+            if(!isRunning) {
+                timeLeft = FOCUS_SECONDS;
+                updateDisplay();
+                els.circle.style.strokeDashoffset = circumference;
+                els.tree.innerText = "🌱";
+            }
+
+            // Update UI buttons
+            document.querySelectorAll('.btn-pill').forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+        }
+
+        function getTreeForSession(mins, streak) {
+            if (streak > 0 && streak % 7 === 0) return '🎋';
+            if (mins >= 90) return '🌴';
+            if (mins >= 50) return '🌳';
+            if (mins >= 25) return '🌲';
+            return '🌿';
+        }
+
+        function updateStreak() {
+            const today = new Date();
+            const todayStr = today.toLocaleDateString();
+
+            const yesterday = new Date(today);
+            yesterday.setDate(today.getDate() - 1);
+            const yestStr = yesterday.toLocaleDateString();
+
+            if (data.lastLogin === todayStr) return;
+
+            if (data.lastLogin === yestStr) {
+                data.streak++;
+            } else {
+                data.streak = 1;
+            }
+
+            data.lastLogin = todayStr;
+        }
+
+        function startSession() {
+            getAudio(); // Init audio context on user gesture
+            
+            isRunning = true;
+            timeLeft = FOCUS_SECONDS;
+            
+            document.body.classList.add('zen-mode');
+            els.setup.style.display = 'none';
+            els.giveUp.style.display = 'block';
+            
+            const task = document.getElementById('taskInput').value || 'Focus Session';
+            els.status.innerText = task;
+            
+            if(document.getElementById('noiseBtn').classList.contains('active')) playNoise();
+
+            timerId = setInterval(tick, 1000);
+        }
+
+        function tick() {
+            if(timeLeft > 0) {
+                timeLeft--;
+                updateDisplay();
+                
+                const pct = 1 - (timeLeft / FOCUS_SECONDS);
+                els.circle.style.strokeDashoffset = circumference * (1 - pct);
+                
+                if      (pct < 0.25) els.tree.innerText = "🌱";
+                else if (pct < 0.50) els.tree.innerText = "🌿";
+                else if (pct < 0.75) els.tree.innerText = "🪴";
+                else                 els.tree.innerText = "🌳";
+                
+            } else {
+                finishSession(true);
+            }
+        }
+
+        // --- Break Logic ---
+        function startBreak() {
+            const earnedTree = getTreeForSession(currentDuration, data.streak);
+            els.breakModal.style.display = 'flex';
+            els.breakTitle.innerText = `${earnedTree} You've earned a 5-minute break!`;
+            els.nextBtn.innerText = "Skip Break";
+            
+            breakTimeLeft = 5 * 60;
+            updateBreakDisplay();
+            breakTimerId = setInterval(breakTick, 1000);
+        }
+
+        function breakTick() {
+            if(breakTimeLeft > 0) {
+                breakTimeLeft--;
+                updateBreakDisplay();
+            } else {
+                clearInterval(breakTimerId);
+                els.breakTimer.innerText = "00:00";
+                els.nextBtn.innerText = "Start Next Focus Session";
+            }
+        }
+
+        function updateBreakDisplay() {
+            const m = Math.floor(breakTimeLeft / 60).toString().padStart(2, '0');
+            const s = (breakTimeLeft % 60).toString().padStart(2, '0');
+            els.breakTimer.innerText = `${m}:${s}`;
+        }
+
+        function closeBreakModal() {
+            clearInterval(breakTimerId);
+            els.breakModal.style.display = 'none';
+            resetDisplay();
+        }
+
+        // --- Give Up Logic ---
+        function showGiveUpModal() {
+            els.modal.style.display = 'flex';
+        }
+
+        function closeModal() {
+            els.modal.style.display = 'none';
+        }
+
+        function confirmGiveUp() {
+            closeModal();
+            finishSession(false);
+        }
+
+        function finishSession(success) {
+            clearInterval(timerId);
+            isRunning = false;
+            document.body.classList.remove('zen-mode');
+            document.getElementById('floatingZenBtn').style.display = 'none';
+            els.setup.style.display = 'flex';
+            els.giveUp.style.display = 'none';
+            stopNoise();
+
+            if(success) {
+                const earnedTree = getTreeForSession(currentDuration, data.streak);
+                els.tree.innerText = earnedTree;
+                els.status.innerText = "Session Complete!";
+                
+                data.totalMinutes += currentDuration;
+                data.sessions++;
+                
+                updateStreak();
+
+                const task = document.getElementById('taskInput').value || 'Focus Session';
+
+                data.forest.unshift({ 
+                    icon: earnedTree, 
+                    date: new Date().toISOString(),
+                    task: task
+                });
+
+                if(data.forest.length > 20) data.forest.pop();
+                
+                saveData();
+                updateStatsUI();
+                renderForest();
+                playSound('win');
+                startBreak();
+            } else {
+                els.tree.innerText = "🥀";
+                els.status.innerText = "Tree Withered";
+                resetDisplay();
+            }
+        }
+
+        function updateDisplay() {
+            const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+            const s = (timeLeft % 60).toString().padStart(2, '0');
+            els.time.innerText = `${m}:${s}`;
+        }
+
+        function resetDisplay() {
+            els.circle.style.strokeDashoffset = circumference;
+            timeLeft = FOCUS_SECONDS;
+            updateDisplay();
+            els.status.innerText = "Ready to Grow";
+        }
+
+        // --- Stats & UI ---
+
+        function updateStatsUI() {
+            const hours = (data.totalMinutes / 60).toFixed(1);
+            els.stats.hours.innerText = hours;
+            els.stats.sessions.innerText = data.sessions;
+            els.stats.streak.innerText = data.streak;
+        }
+
+        function renderForest() {
+            els.forest.innerHTML = '';
+            data.forest.forEach(tree => {
+                const el = document.createElement('div');
+                el.className = 'tree-item';
+                el.innerText = tree.icon;
+                
+                const timeStr = new Date(tree.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                el.title = tree.task ? `${tree.task} (${timeStr})` : timeStr;
+                
+                els.forest.appendChild(el);
+            });
+        }
+
+        // --- Audio ---
+        function toggleNoise() {
+            const btn = document.getElementById('noiseBtn');
+            btn.classList.toggle('active');
+            if(isRunning && btn.classList.contains('active')) playNoise();
+            else stopNoise();
+        }
+
+        function playNoise() {
+            if(noiseNode) return;
+            let ctx = getAudio();
+            const bufferSize = ctx.sampleRate * 2;
+            const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+            const output = buffer.getChannelData(0);
+            let lastOut = 0;
+            for (let i = 0; i < bufferSize; i++) {
+                const white = Math.random() * 2 - 1;
+                output[i] = (lastOut + (0.02 * white)) / 1.02;
+                lastOut = output[i];
+                output[i] *= 3.5; 
+            }
+            noiseNode = ctx.createBufferSource();
+            noiseNode.buffer = buffer;
+            noiseNode.loop = true;
+            const gain = ctx.createGain();
+            gain.gain.value = 0.1;
+            noiseNode.connect(gain);
+            gain.connect(ctx.destination);
+            noiseNode.start();
+        }
+
+        function stopNoise() {
+            if(noiseNode) {
+                noiseNode.stop();
+                noiseNode = null;
+            }
+        }
+
+        function playSound(type) {
+            let ctx = getAudio();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            if(type === 'win') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(440, ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(880, ctx.currentTime + 0.5);
+                gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 1);
+                osc.start(); osc.stop(ctx.currentTime + 1);
+            }
+        }
+
+        function toggleTheme() { 
+            document.body.classList.toggle('dark-mode'); 
+            localStorage.setItem('ym_theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
+        }
+
+        function toggleZen() {
+            document.body.classList.toggle('zen-mode');
+            
+            // Show a floating exit button if Zen mode is manually activated (not during a session)
+            if (document.body.classList.contains('zen-mode') && !isRunning) {
+                document.getElementById('floatingZenBtn').style.display = 'flex';
+            } else {
+                document.getElementById('floatingZenBtn').style.display = 'none';
+            }
+        }
+
+        init();
+
+    </script>
+    <script src="../shared/crisis-support.js"></script>
+</body>
+</html>
+
+

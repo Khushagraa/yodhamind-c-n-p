@@ -1,0 +1,1093 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title>YodhaMind — Student Community</title>
+    <meta name="description" content="A safe, anonymous space for college students to share struggles, ask questions, and feel less alone.">
+
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;800&display=swap" rel="stylesheet">
+
+    <script src="/shared/storage.js"></script>
+
+    <style>
+        :root {
+            --primary:      #7C5CBF;
+            --accent:       #56CFB2;
+            --warm:         #FFF8F0;
+            --text:         #2D2D2D;
+            --soft:         #F0EBF8;
+            --text-light:   #64748b;
+            --glass-border: rgba(255,255,255,0.5);
+            --shadow-soft:  0 20px 40px rgba(0,0,0,0.05);
+            --shadow-hover: 0 30px 60px rgba(124,92,191,0.15);
+            --radius-card:  24px;
+            --radius-btn:   50px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: linear-gradient(180deg, var(--soft) 0%, var(--warm) 40%, #ffffff 100%);
+            color: var(--text); overflow-x: hidden;
+            min-height: 100dvh; padding-bottom: 80px;
+        }
+
+        /* ═══ NAV ═══ */
+        nav#navbar {
+            position: fixed; top: 0; width: 100%;
+            background: rgba(255,255,255,0.92); backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            z-index: 1000; padding: 14px 0; transition: all 0.3s;
+        }
+        nav#navbar.scrolled { padding: 10px 0; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .nav-container {
+            max-width: 1200px; margin: 0 auto;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 24px;
+        }
+        .logo {
+            font-size: 1.5rem; font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+        .nav-right { display: flex; align-items: center; gap: 12px; }
+        .nav-links { display: flex; gap: 20px; align-items: center; }
+        .nav-links a {
+            text-decoration: none; color: var(--text);
+            font-weight: 600; font-size: 0.9rem; transition: color 0.2s;
+        }
+        .nav-links a:hover, .nav-links a.active { color: var(--primary); }
+        .btn-cta {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white; padding: 9px 22px; border-radius: var(--radius-btn);
+            font-weight: 700; font-size: 0.88rem;
+            border: none; cursor: pointer; font-family: inherit;
+            box-shadow: 0 8px 20px rgba(124,92,191,0.2);
+            transition: transform 0.2s; text-decoration: none; display: inline-block;
+        }
+        .btn-cta:hover { transform: translateY(-2px); color: white; }
+        @media (max-width: 768px) { .nav-links { display: none; } }
+
+        /* ═══ PAGE ═══ */
+        .page { max-width: 680px; margin: 0 auto; padding: 94px 20px 40px; }
+
+        /* ═══ HERO STRIP ═══ */
+        .hero-strip {
+            background: linear-gradient(135deg, var(--primary) 0%, #9B7FD4 60%, var(--accent) 100%);
+            border-radius: var(--radius-card); padding: 28px;
+            color: white; margin-bottom: 24px; position: relative; overflow: hidden;
+        }
+        .hero-strip::before {
+            content: ''; position: absolute; top: -40px; right: -40px;
+            width: 140px; height: 140px; border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+        }
+        .hero-strip::after {
+            content: ''; position: absolute; bottom: -30px; left: -20px;
+            width: 100px; height: 100px; border-radius: 50%;
+            background: rgba(255,255,255,0.06);
+        }
+        .hero-strip-inner { position: relative; z-index: 1; }
+        .hero-strip h1 { font-size: 1.35rem; font-weight: 800; margin-bottom: 6px; }
+        .hero-strip p  { font-size: 0.83rem; opacity: 0.85; line-height: 1.6; font-weight: 500; max-width: 420px; }
+        .hero-rules {
+            display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px;
+        }
+        .hero-rule {
+            display: flex; align-items: center; gap: 5px;
+            background: rgba(255,255,255,0.15); border-radius: var(--radius-btn);
+            padding: 5px 12px; font-size: 0.72rem; font-weight: 700;
+            backdrop-filter: blur(4px);
+        }
+
+        /* ═══ TABS ═══ */
+        .tab-bar {
+            display: flex; gap: 4px; background: white;
+            border-radius: var(--radius-btn); padding: 4px;
+            box-shadow: var(--shadow-soft); margin-bottom: 20px;
+            border: 1px solid rgba(0,0,0,0.04);
+        }
+        .tab-btn {
+            flex: 1; padding: 9px 16px; border-radius: 40px;
+            border: none; cursor: pointer; font-family: inherit;
+            font-weight: 700; font-size: 0.85rem; color: var(--text-light);
+            background: none; transition: all 0.2s;
+        }
+        .tab-btn.active { background: var(--primary); color: white; }
+
+        /* ═══ CONTROLS ROW ═══ */
+        .controls-row {
+            display: flex; gap: 10px; align-items: center;
+            margin-bottom: 16px; flex-wrap: wrap;
+        }
+        .filter-scroll {
+            flex: 1; display: flex; gap: 7px;
+            overflow-x: auto; scrollbar-width: none;
+        }
+        .filter-scroll::-webkit-scrollbar { display: none; }
+        .filter-chip {
+            flex-shrink: 0; padding: 7px 14px; border-radius: var(--radius-btn);
+            border: 1.5px solid rgba(0,0,0,0.08); background: white;
+            font-family: inherit; font-size: 0.76rem; font-weight: 700;
+            color: var(--text-light); cursor: pointer; transition: all 0.18s;
+            white-space: nowrap;
+        }
+        .filter-chip:hover, .filter-chip.active {
+            background: var(--primary); color: white; border-color: var(--primary);
+        }
+        .sort-btn {
+            flex-shrink: 0; padding: 7px 14px; border-radius: var(--radius-btn);
+            border: 1.5px solid rgba(0,0,0,0.08); background: white;
+            font-family: inherit; font-size: 0.76rem; font-weight: 700;
+            color: var(--text-light); cursor: pointer; transition: all 0.18s;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .sort-btn.active { border-color: var(--primary); color: var(--primary); }
+
+        /* ═══ WRITE POST BUTTON ═══ */
+        .btn-write {
+            width: 100%; margin-bottom: 20px; padding: 14px;
+            background: white; border: 2px dashed rgba(124,92,191,0.3);
+            border-radius: 20px; cursor: pointer; font-family: inherit;
+            font-weight: 700; font-size: 0.9rem; color: var(--text-light);
+            transition: all 0.2s; display: flex; align-items: center;
+            gap: 10px;
+        }
+        .btn-write:hover {
+            border-color: var(--primary); color: var(--primary);
+            background: var(--soft); border-style: solid;
+        }
+        .btn-write-avatar {
+            width: 34px; height: 34px; border-radius: 50%;
+            background: var(--soft); flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem;
+        }
+
+        /* ═══ POST CARD ═══ */
+        .post-card {
+            background: white; border-radius: 20px;
+            border: 1.5px solid rgba(0,0,0,0.04);
+            box-shadow: var(--shadow-soft); padding: 20px;
+            margin-bottom: 14px; transition: all 0.22s;
+        }
+        .post-card:hover { border-color: rgba(124,92,191,0.18); }
+
+        .post-header {
+            display: flex; justify-content: space-between;
+            align-items: center; margin-bottom: 10px;
+        }
+        .post-anon-name {
+            display: flex; align-items: center; gap: 8px;
+        }
+        .anon-avatar {
+            width: 30px; height: 30px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.9rem; flex-shrink: 0;
+        }
+        .anon-name-text { font-size: 0.8rem; font-weight: 700; color: var(--text-light); }
+        .post-time { font-size: 0.7rem; color: var(--text-light); font-weight: 600; }
+
+        /* Category chip on post */
+        .post-cat {
+            font-size: 0.68rem; font-weight: 800; padding: 3px 9px;
+            border-radius: 20px; text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        /* Post body */
+        .post-body {
+            font-size: 0.9rem; line-height: 1.7; color: var(--text);
+            font-weight: 500; margin-bottom: 14px;
+        }
+        .post-body.collapsed {
+            display: -webkit-box; -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical; overflow: hidden;
+        }
+        .read-more-btn {
+            background: none; border: none; cursor: pointer;
+            font-family: inherit; font-size: 0.78rem; font-weight: 700;
+            color: var(--primary); padding: 0; display: block;
+            margin-top: -6px; margin-bottom: 12px;
+        }
+
+        /* Post footer actions */
+        .post-footer {
+            display: flex; align-items: center; gap: 10px;
+            padding-top: 12px; border-top: 1px solid rgba(0,0,0,0.05);
+        }
+        .action-btn {
+            display: flex; align-items: center; gap: 5px;
+            background: none; border: 1.5px solid rgba(0,0,0,0.08);
+            border-radius: var(--radius-btn);
+            padding: 6px 14px; cursor: pointer; font-family: inherit;
+            font-size: 0.78rem; font-weight: 700; color: var(--text-light);
+            transition: all 0.18s;
+        }
+        .action-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--soft); }
+        .action-btn.related {
+            background: rgba(124,92,191,0.08);
+            border-color: var(--primary); color: var(--primary);
+        }
+        .action-btn.related .relate-icon { animation: heartPop 0.35s cubic-bezier(0.34,1.56,0.64,1); }
+        @keyframes heartPop {
+            0%  { transform: scale(1); }
+            50% { transform: scale(1.4); }
+            100%{ transform: scale(1); }
+        }
+        .expand-btn {
+            margin-left: auto; background: none; border: none; cursor: pointer;
+            font-size: 0.78rem; font-weight: 700; color: var(--text-light);
+            display: flex; align-items: center; gap: 4px;
+            padding: 6px 10px; border-radius: var(--radius-btn);
+            transition: all 0.18s;
+        }
+        .expand-btn:hover { color: var(--primary); background: var(--soft); }
+
+        /* ═══ EXPANDED POST ═══ */
+        .comment-section {
+            display: none; margin-top: 14px; padding-top: 14px;
+            border-top: 1px solid rgba(0,0,0,0.06);
+        }
+        .comment-section.open { display: block; }
+        .comment-item {
+            display: flex; gap: 10px; margin-bottom: 12px;
+        }
+        .comment-bubble {
+            background: var(--soft); border-radius: 0 14px 14px 14px;
+            padding: 10px 14px; flex: 1;
+        }
+        .comment-author { font-size: 0.7rem; font-weight: 800; color: var(--primary); margin-bottom: 3px; }
+        .comment-text   { font-size: 0.83rem; color: var(--text); line-height: 1.55; font-weight: 500; }
+        .comment-time   { font-size: 0.64rem; color: var(--text-light); margin-top: 4px; font-weight: 600; }
+
+        /* Comment input row */
+        .comment-input-row {
+            display: flex; gap: 8px; align-items: flex-end; margin-top: 10px;
+        }
+        .comment-input {
+            flex: 1; padding: 10px 14px;
+            border: 1.5px solid rgba(0,0,0,0.09); border-radius: 14px;
+            font-family: inherit; font-size: 0.85rem; color: var(--text);
+            background: white; outline: none; resize: none;
+            transition: border-color 0.2s; min-height: 42px; max-height: 120px;
+        }
+        .comment-input:focus { border-color: var(--primary); }
+        .btn-send-comment {
+            width: 40px; height: 40px; border-radius: 12px;
+            background: var(--primary); color: white; border: none;
+            cursor: pointer; font-size: 1rem; flex-shrink: 0;
+            transition: all 0.18s;
+        }
+        .btn-send-comment:hover { opacity: 0.88; transform: scale(1.05); }
+
+        /* ═══ WRITE POST MODAL ═══ */
+        .modal-overlay {
+            position: fixed; inset: 0; z-index: 2000;
+            background: rgba(20,10,40,0.5); backdrop-filter: blur(5px);
+            display: flex; align-items: flex-end; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.25s;
+        }
+        .modal-overlay.open { opacity: 1; pointer-events: all; }
+        .modal-sheet {
+            width: 100%; max-width: 680px; background: white;
+            border-radius: 32px 32px 0 0; padding: 24px 24px 40px;
+            transform: translateY(100%);
+            transition: transform 0.35s cubic-bezier(0.32,1.15,0.64,1);
+            max-height: 90dvh; overflow-y: auto;
+        }
+        .modal-overlay.open .modal-sheet { transform: translateY(0); }
+        .modal-handle {
+            width: 40px; height: 4px; background: rgba(0,0,0,0.1);
+            border-radius: 2px; margin: 0 auto 20px;
+        }
+        .modal-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 6px; }
+        .modal-sub   { font-size: 0.82rem; color: var(--text-light); margin-bottom: 18px; line-height: 1.6; }
+
+        .form-label {
+            font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.06em; color: var(--text-light); display: block; margin-bottom: 8px;
+        }
+        .form-textarea {
+            width: 100%; padding: 14px 16px; min-height: 140px;
+            border: 1.5px solid rgba(0,0,0,0.09); border-radius: 16px;
+            font-family: inherit; font-size: 0.92rem; color: var(--text);
+            background: white; outline: none; resize: none; display: block;
+            margin-bottom: 6px; line-height: 1.7;
+            transition: border-color 0.2s;
+        }
+        .form-textarea:focus { border-color: var(--primary); }
+        .char-counter {
+            font-size: 0.72rem; font-weight: 700; color: var(--text-light);
+            text-align: right; margin-bottom: 16px;
+        }
+        .char-counter.warn { color: #D97706; }
+
+        /* Category selector */
+        .cat-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+        .cat-btn {
+            padding: 7px 16px; border-radius: var(--radius-btn);
+            border: 1.5px solid rgba(0,0,0,0.08); background: var(--soft);
+            font-family: inherit; font-size: 0.8rem; font-weight: 700;
+            color: var(--text-light); cursor: pointer; transition: all 0.15s;
+        }
+        .cat-btn.sel { background: var(--primary); color: white; border-color: var(--primary); }
+
+        /* Type toggle (share / question) */
+        .type-toggle {
+            display: flex; gap: 8px; margin-bottom: 16px;
+        }
+        .type-btn {
+            flex: 1; padding: 10px; border-radius: 14px;
+            border: 1.5px solid rgba(0,0,0,0.08); background: var(--soft);
+            font-family: inherit; font-size: 0.83rem; font-weight: 700;
+            color: var(--text-light); cursor: pointer; text-align: center;
+            transition: all 0.18s;
+        }
+        .type-btn.sel { border-color: var(--primary); background: white; color: var(--primary);
+            box-shadow: 0 4px 12px rgba(124,92,191,0.14); }
+
+        /* Intervention box — shown when distress keywords detected */
+        .intervention-box {
+            display: none; background: #FEF2F2;
+            border: 1.5px solid #FCA5A5; border-radius: 16px;
+            padding: 16px 18px; margin-bottom: 16px;
+        }
+        .intervention-box.visible { display: block; }
+        .intervention-title { font-weight: 800; font-size: 0.9rem; color: #DC2626; margin-bottom: 6px; }
+        .intervention-text  { font-size: 0.82rem; color: #7F1D1D; line-height: 1.6; }
+        .intervention-text a { color: #DC2626; font-weight: 700; text-decoration: none; }
+
+        .btn-post {
+            width: 100%; padding: 14px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white; border: none; border-radius: 16px;
+            font-family: inherit; font-weight: 800; font-size: 0.95rem;
+            cursor: pointer; box-shadow: 0 10px 24px rgba(124,92,191,0.25);
+            transition: opacity 0.2s, transform 0.2s;
+        }
+        .btn-post:hover { opacity: 0.92; transform: translateY(-2px); }
+
+        /* ═══ MY POSTS VIEW ═══ */
+        .my-empty {
+            text-align: center; padding: 50px 20px;
+        }
+        .my-empty-icon  { font-size: 2.8rem; margin-bottom: 12px; }
+        .my-empty-title { font-size: 1rem; font-weight: 800; margin-bottom: 7px; }
+        .my-empty-text  { font-size: 0.85rem; color: var(--text-light); line-height: 1.7; }
+
+        /* ═══ CRISIS STRIP ═══ */
+        .crisis-strip {
+            background: white; border-top: 1px solid rgba(0,0,0,0.05);
+            padding: 14px 20px; text-align: center;
+            font-size: 0.78rem; color: var(--text-light); font-weight: 500;
+        }
+        .crisis-strip a { color: var(--primary); font-weight: 700; text-decoration: none; }
+        .crisis-strip a:hover { text-decoration: underline; }
+
+        /* ═══ MOBILE NAV ═══ */
+        .mobile-nav {
+            display: none; position: fixed; bottom: 0; left: 0; width: 100%;
+            background: rgba(255,255,255,0.98); backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(0,0,0,0.05);
+            justify-content: space-around;
+            padding: 10px 0 max(10px, env(safe-area-inset-bottom));
+            z-index: 1000;
+        }
+        .mobile-nav a {
+            text-decoration: none; color: var(--text-light);
+            display: flex; flex-direction: column;
+            align-items: center; gap: 3px;
+            font-size: 0.68rem; font-weight: 700; min-width: 50px;
+        }
+        .mobile-nav a.active { color: var(--primary); }
+        .mobile-nav a span  { font-size: 1.25rem; line-height: 1; }
+        @media (max-width: 768px) { .mobile-nav { display: flex; } }
+
+        /* ═══ TOAST ═══ */
+        .toast {
+            position: fixed; bottom: 76px; left: 50%;
+            transform: translateX(-50%) translateY(10px);
+            background: var(--text); color: white;
+            padding: 10px 22px; border-radius: var(--radius-btn);
+            font-size: 0.85rem; font-weight: 700;
+            z-index: 5000; opacity: 0; pointer-events: none;
+            transition: opacity 0.25s, transform 0.25s; white-space: nowrap;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .post-card { animation: fadeUp 0.35s ease both; }
+    </style>
+</head>
+<body>
+
+    <!-- ═══ NAV ═══ -->
+    <nav id="navbar">
+        <div class="nav-container">
+            <a href="/" class="logo">✨ YodhaMind</a>
+            <div class="nav-right">
+                <div class="nav-links">
+                    <a href="/dashboard">Dashboard</a>
+                    <a href="/games">Mind Gym</a>
+                    <a href="/assessment">Assess</a>
+                    <a href="/connect">Support</a>
+                    <a href="/community" class="active">Community</a>
+                </div>
+                <button class="btn-cta" onclick="openWriteModal()">✏️ Share</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ═══ MAIN ═══ -->
+    <main class="page">
+
+        <!-- Hero -->
+        <div class="hero-strip">
+            <div class="hero-strip-inner">
+                <h1>You're not alone in this 🌿</h1>
+                <p>A judgment-free space for students to share struggles, ask questions, and find solidarity. Everything here is 100% anonymous.</p>
+                <div class="hero-rules">
+                    <div class="hero-rule">👁️ Anonymous</div>
+                    <div class="hero-rule">🛡️ Moderated</div>
+                    <div class="hero-rule">❤️ Be Kind</div>
+                    <div class="hero-rule">🚫 No Hate</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tab-bar">
+            <button class="tab-btn active" id="tabAll"       onclick="switchTab('all')">All Posts</button>
+            <button class="tab-btn"        id="tabQuestions" onclick="switchTab('questions')">❓ Questions</button>
+            <button class="tab-btn"        id="tabMine"      onclick="switchTab('mine')">My Posts</button>
+        </div>
+
+        <!-- Feed & Questions views share same container -->
+        <div id="feedView">
+            <!-- Controls -->
+            <div class="controls-row">
+                <div class="filter-scroll" id="filterRow">
+                    <button class="filter-chip active" onclick="setFilter(this,'')" data-cat="">All</button>
+                    <button class="filter-chip" onclick="setFilter(this,'academics')" data-cat="academics">📚 Academics</button>
+                    <button class="filter-chip" onclick="setFilter(this,'exams')" data-cat="exams">📝 Exams</button>
+                    <button class="filter-chip" onclick="setFilter(this,'stress')" data-cat="stress">😤 Stress</button>
+                    <button class="filter-chip" onclick="setFilter(this,'burnout')" data-cat="burnout">😩 Burnout</button>
+                    <button class="filter-chip" onclick="setFilter(this,'relationships')" data-cat="relationships">💞 Relationships</button>
+                    <button class="filter-chip" onclick="setFilter(this,'general')" data-cat="general">💭 General</button>
+                </div>
+                <button class="sort-btn" id="sortBtn" onclick="toggleSort()">
+                    <span id="sortIcon">🕐</span>
+                    <span id="sortLabel">Recent</span>
+                </button>
+            </div>
+
+            <!-- Write invite -->
+            <button class="btn-write" onclick="openWriteModal()">
+                <div class="btn-write-avatar">🌿</div>
+                <span>Share something anonymously…</span>
+            </button>
+
+            <!-- Posts list -->
+            <div id="postsList"></div>
+        </div>
+
+        <!-- My Posts view -->
+        <div id="mineView" style="display:none;"></div>
+
+    </main>
+
+    <!-- CRISIS STRIP -->
+    <div class="crisis-strip">
+        Struggling right now? &nbsp;
+        <a href="tel:9152987821">iCall: 9152987821</a> &nbsp;·&nbsp;
+        <a href="tel:18602662345">Vandrevala: 1860-2662-345</a>
+    </div>
+
+    <!-- MOBILE NAV -->
+    <nav class="mobile-nav">
+        <a href="/dashboard"><span>🏠</span>Home</a>
+        <a href="/games"><span>🎮</span>Games</a>
+        <a href="/assessment"><span>📋</span>Assess</a>
+        <a href="/connect"><span>💬</span>Support</a>
+        <a href="/community" class="active"><span>🌿</span>Community</a>
+    </nav>
+
+    <!-- ═══ WRITE POST MODAL ═══ -->
+    <div class="modal-overlay" id="writeModal" onclick="closeBg(event,'writeModal')">
+        <div class="modal-sheet">
+            <div class="modal-handle"></div>
+            <div class="modal-title">Share Anonymously 🌿</div>
+            <div class="modal-sub">
+                Your name is never shown. Not even to admins.
+                Please be kind — others are going through something too.
+            </div>
+
+            <!-- Type: share vs question -->
+            <label class="form-label">Type</label>
+            <div class="type-toggle">
+                <button class="type-btn sel" onclick="pickType(this,'share')">💬 Share / Vent</button>
+                <button class="type-btn"     onclick="pickType(this,'question')">❓ Ask a Question</button>
+            </div>
+
+            <!-- Content -->
+            <label class="form-label">What's on your mind?</label>
+            <textarea
+                class="form-textarea" id="postContent"
+                placeholder="Write freely. No names. No judgment."
+                oninput="onPostInput()"
+                maxlength="500"
+            ></textarea>
+            <div class="char-counter" id="postCharCount">0 / 500</div>
+
+            <!-- Distress intervention -->
+            <div class="intervention-box" id="interventionBox">
+                <div class="intervention-title">⚠️ We noticed you might be going through something serious</div>
+                <div class="intervention-text">
+                    You can still post — but please also consider reaching out to a counselor.
+                    <a href="/connect">Book a free consultation →</a>
+                    &nbsp; or call <a href="tel:9152987821">iCall: 9152987821</a>
+                </div>
+            </div>
+
+            <!-- Category -->
+            <label class="form-label">Category</label>
+            <div class="cat-grid" id="postCatGrid">
+                <button class="cat-btn sel"  onclick="pickCat(this,'academics')">📚 Academics</button>
+                <button class="cat-btn"      onclick="pickCat(this,'exams')">📝 Exams</button>
+                <button class="cat-btn"      onclick="pickCat(this,'stress')">😤 Stress</button>
+                <button class="cat-btn"      onclick="pickCat(this,'burnout')">😩 Burnout</button>
+                <button class="cat-btn"      onclick="pickCat(this,'relationships')">💞 Relationships</button>
+                <button class="cat-btn"      onclick="pickCat(this,'general')">💭 General</button>
+            </div>
+
+            <button class="btn-post" onclick="submitPost()">Post Anonymously →</button>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast"></div>
+
+
+    <!-- ══════════════════════════════════════
+         JAVASCRIPT
+    ══════════════════════════════════════ -->
+    <script>
+    'use strict';
+
+    /* ───────────────────────────────────────────
+       ANONYMOUS NAME GENERATOR
+    ─────────────────────────────────────────── */
+    const ADJ     = ['Gentle','Quiet','Brave','Calm','Curious','Kind','Steady','Soft','Bold','Warm','Thoughtful','Hopeful','Tired','Lost','Searching','Rising','Humble','Patient','Restless','Earnest'];
+    const ANIMALS = ['Sparrow','Deer','Owl','Fox','Robin','Crane','Moth','Finch','Bear','Rabbit','Heron','Wolf','Dove','Falcon','Elk','Swan','Lynx','Jay','Otter','Raven'];
+
+    // Deterministic from post id so same post always shows same name
+    function anonName(id) {
+        let hash = 0;
+        for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+        return ADJ[hash % ADJ.length] + ' ' + ANIMALS[(hash >> 4) % ANIMALS.length];
+    }
+
+    // Avatar bg tints
+    const TINTS = ['#F0EBF8','#E0F2FE','#FEF3C7','#DCFCE7','#FFE4E6','#F5F3FF','#ECFDF5','#FFF7ED'];
+    function anonTint(id) {
+        let hash = 0;
+        for (let i = 0; i < id.length; i++) hash = (hash * 17 + id.charCodeAt(i)) >>> 0;
+        return TINTS[hash % TINTS.length];
+    }
+    function anonEmoji(id) {
+        const EMOJIS = ['🌿','🌸','🍃','🦋','🌊','🍂','⭐','🌙','🔥','🌺','🍀','🌻','🎋','🌈','🕊️','🐾'];
+        let hash = 0;
+        for (let i = 0; i < id.length; i++) hash = (hash * 13 + id.charCodeAt(i)) >>> 0;
+        return EMOJIS[hash % EMOJIS.length];
+    }
+
+    /* ───────────────────────────────────────────
+       CATEGORY STYLING
+    ─────────────────────────────────────────── */
+    const CAT_STYLE = {
+        academics:     { bg:'rgba(124,92,191,0.1)',  color:'#7C5CBF',   label:'📚 Academics' },
+        exams:         { bg:'rgba(245,158,11,0.12)', color:'#D97706',   label:'📝 Exams' },
+        stress:        { bg:'rgba(220,38,38,0.08)',  color:'#DC2626',   label:'😤 Stress' },
+        burnout:       { bg:'rgba(234,88,12,0.1)',   color:'#EA580C',   label:'😩 Burnout' },
+        relationships: { bg:'rgba(236,72,153,0.1)',  color:'#DB2777',   label:'💞 Relationships' },
+        general:       { bg:'rgba(100,116,139,0.1)', color:'#64748b',   label:'💭 General' }
+    };
+    function catStyle(cat) {
+        return CAT_STYLE[cat] || CAT_STYLE.general;
+    }
+
+    /* ───────────────────────────────────────────
+       SEED POSTS (realistic Indian college voices)
+    ─────────────────────────────────────────── */
+    const SEED_POSTS = [
+        { id:'seed_001', type:'share',    cat:'exams',         content:"Failed my mid-sem. Not just failed — got a 12/50. I've been studying 8 hours a day but nothing sticks. I genuinely don't know what's wrong with me. Everyone else seems fine.", relates:61, ts: Date.now()-2*3600000 },
+        { id:'seed_002', type:'question', cat:'stress',        content:"Is it normal to feel numb during exam season? Like I know I should be stressed and studying but I just feel... empty. Can't cry, can't focus, can't feel anything.", relates:88, ts: Date.now()-4*3600000 },
+        { id:'seed_003', type:'share',    cat:'relationships', content:"My parents call every single evening and ask 'kitna padha aaj?' I love them but it's suffocating. I can't even breathe without feeling like I'm disappointing them.", relates:134, ts: Date.now()-6*3600000 },
+        { id:'seed_004', type:'share',    cat:'burnout',       content:"Third year is nothing like I expected. I thought I'd be motivated and building cool stuff. Instead I sleep 10 hours, skip classes, and stare at my ceiling wondering what the point is.", relates:97, ts: Date.now()-8*3600000 },
+        { id:'seed_005', type:'question', cat:'academics',     content:"How do you deal with being the 'dumb one' in your friend group? All my friends are topping but I'm struggling to pass. I feel like I don't belong here.", relates:142, ts: Date.now()-10*3600000 },
+        { id:'seed_006', type:'share',    cat:'general',       content:"Took a mental health day today. First time I've slept more than 5 hours in a week. Feeling guilty but also... relieved. Is this okay?", relates:203, ts: Date.now()-12*3600000 },
+        { id:'seed_007', type:'share',    cat:'stress',        content:"I keep making to-do lists and then doing none of it. The guilt snowballs and then I avoid everything harder. Is this executive dysfunction or am I just lazy?", relates:176, ts: Date.now()-14*3600000 },
+        { id:'seed_008', type:'question', cat:'relationships', content:"Best friend got into better college than me and now I can't stop comparing. I'm genuinely happy for them but I also feel like a failure. How do I stop this?", relates:89, ts: Date.now()-16*3600000 },
+        { id:'seed_009', type:'share',    cat:'burnout',       content:"Finished my internship today. Was supposed to feel proud. Just felt exhausted and empty. My manager said I 'showed a lot of promise.' I don't feel it at all.", relates:55, ts: Date.now()-20*3600000 },
+        { id:'seed_010', type:'share',    cat:'general',       content:"Started doing the breathing exercise from Yodha Flow when I feel overwhelmed. The 4-7-8 pattern actually worked during my viva. Wanted to share in case anyone needed it.", relates:312, ts: Date.now()-24*3600000 },
+        { id:'seed_011', type:'question', cat:'stress',        content:"Anyone else's hands shake before presentations? Not nervousness, literal trembling. It's embarrassing and I don't know how to stop it.", relates:74, ts: Date.now()-28*3600000 },
+        { id:'seed_012', type:'share',    cat:'academics',     content:"Dropped a course today. Feels like giving up but I was spending 15 hours a week on it and failing. Sometimes quitting IS the right choice I guess.", relates:158, ts: Date.now()-32*3600000 },
+        { id:'seed_013', type:'share',    cat:'exams',         content:"Broke down crying in the library yesterday. A stranger just passed me a pack of tissues without saying anything. That small kindness made everything less terrible. Humans are good.", relates:421, ts: Date.now()-36*3600000 },
+        { id:'seed_014', type:'question', cat:'burnout',       content:"When you're burnt out, how do you even start recovering? I've taken breaks but I come back feeling worse, not better. Like rest doesn't work on me anymore.", relates:193, ts: Date.now()-48*3600000 },
+        { id:'seed_015', type:'share',    cat:'general',       content:"College is the best years of your life they said. I'm 20 and I feel 45 and exhausted. Not a complaint, just wanted to say this out loud to someone.", relates:267, ts: Date.now()-60*3600000 }
+    ];
+
+    /* ───────────────────────────────────────────
+       MODERATION — keyword detection
+    ─────────────────────────────────────────── */
+    const DISTRESS_TERMS = [
+        'kill myself','end my life','suicide','want to die','can\'t go on',
+        'no reason to live','self harm','cutting myself','hurt myself',
+        'don\'t want to exist','disappear forever'
+    ];
+
+    function hasDistress(text) {
+        const lower = text.toLowerCase();
+        return DISTRESS_TERMS.some(t => lower.includes(t));
+    }
+
+    const BLOCK_TERMS = [
+        'harass','doxx','personal info','phone number of','whatsapp of',
+        'address of','photo of','hate all','kill all'
+    ];
+
+    function isBlocked(text) {
+        const lower = text.toLowerCase();
+        return BLOCK_TERMS.some(t => lower.includes(t));
+    }
+
+    /* ───────────────────────────────────────────
+       STATE
+    ─────────────────────────────────────────── */
+    let activeTab      = 'all';
+    let activeCat      = '';
+    let sortMode       = 'recent';   // 'recent' | 'relates'
+    let postType       = 'share';
+    let postCat        = 'academics';
+    let mySessionId    = Date.now().toString(36); // identifies "my" posts this session
+
+    /* ───────────────────────────────────────────
+       NAV SHADOW
+    ─────────────────────────────────────────── */
+    window.addEventListener('scroll', () => {
+        document.getElementById('navbar')
+            .classList.toggle('scrolled', window.scrollY > 10);
+    }, { passive: true });
+
+    /* ───────────────────────────────────────────
+       STORAGE HELPERS
+    ─────────────────────────────────────────── */
+    function getPosts()    { return YM.get('ym_anon_posts', [...SEED_POSTS]); }
+    function getRelates()  { return YM.get('ym_anon_relates', {}); }
+    function getLiked()    { return YM.get('ym_anon_liked', []); }
+    function getComments() { return YM.get('ym_anon_comments', {}); }
+
+    /* ───────────────────────────────────────────
+       TABS
+    ─────────────────────────────────────────── */
+    function switchTab(tab) {
+        activeTab = tab;
+        ['all','questions','mine'].forEach(t => {
+            document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1))
+                .classList.toggle('active', t === tab);
+        });
+        document.getElementById('feedView').style.display = tab === 'mine' ? 'none' : '';
+        document.getElementById('mineView').style.display = tab === 'mine' ? '' : 'none';
+
+        if (tab === 'mine') renderMine();
+        else renderPosts();
+    }
+
+    /* ───────────────────────────────────────────
+       FILTER + SORT
+    ─────────────────────────────────────────── */
+    function setFilter(btn, cat) {
+        document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        activeCat = cat;
+        renderPosts();
+    }
+
+    function toggleSort() {
+        sortMode = sortMode === 'recent' ? 'relates' : 'recent';
+        const btn = document.getElementById('sortBtn');
+        btn.classList.toggle('active', sortMode === 'relates');
+        document.getElementById('sortIcon').textContent  = sortMode === 'recent' ? '🕐' : '❤️';
+        document.getElementById('sortLabel').textContent = sortMode === 'recent' ? 'Recent' : 'Most Relatable';
+        renderPosts();
+    }
+
+    /* ───────────────────────────────────────────
+       RENDER POSTS
+    ─────────────────────────────────────────── */
+    function renderPosts() {
+        let posts   = getPosts();
+        const liked = getLiked();
+        const rels  = getRelates();
+        const comms = getComments();
+
+        // Merge stored relates into posts
+        posts = posts.map(p => ({
+            ...p,
+            relates: (rels[p.id] ?? p.relates ?? 0)
+        }));
+
+        // Tab filter
+        if (activeTab === 'questions') posts = posts.filter(p => p.type === 'question');
+
+        // Category filter
+        if (activeCat) posts = posts.filter(p => p.cat === activeCat);
+
+        // Sort
+        if (sortMode === 'relates') {
+            posts = [...posts].sort((a, b) => b.relates - a.relates);
+        } else {
+            posts = [...posts].sort((a, b) => b.ts - a.ts);
+        }
+
+        const el = document.getElementById('postsList');
+
+        if (!posts.length) {
+            el.innerHTML = `
+                <div style="text-align:center;padding:50px 20px;">
+                    <div style="font-size:2.5rem;margin-bottom:12px;">🔍</div>
+                    <p style="font-weight:700;margin-bottom:6px;">No posts yet</p>
+                    <p style="font-size:0.85rem;color:var(--text-light);">Be the first to share something.</p>
+                </div>`;
+            return;
+        }
+
+        el.innerHTML = posts.map((p, i) =>
+            buildPostCard(p, liked, comms, i)
+        ).join('');
+    }
+
+    function buildPostCard(p, liked, comms, delay) {
+        const cs    = catStyle(p.cat);
+        const name  = anonName(p.id);
+        const emoji = anonEmoji(p.id);
+        const tint  = anonTint(p.id);
+        const isLiked = liked.includes(p.id);
+        const comments = comms[p.id] || [];
+        const ago   = timeAgo(p.ts);
+        const isLong = (p.content || '').length > 220;
+        const type  = p.type === 'question' ? '❓ Question' : '';
+
+        const commentsHtml = comments.map(c => `
+            <div class="comment-item">
+                <div class="anon-avatar" style="background:${anonTint(c.id)}; width:28px; height:28px; border-radius:9px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:0.85rem;">${anonEmoji(c.id)}</div>
+                <div class="comment-bubble">
+                    <div class="comment-author">${anonName(c.id)}</div>
+                    <div class="comment-text">${escHtml(c.text)}</div>
+                    <div class="comment-time">${timeAgo(c.ts)}</div>
+                </div>
+            </div>
+        `).join('');
+
+        return `
+        <div class="post-card" id="post_${p.id}" style="animation-delay:${delay * 0.04}s">
+            <div class="post-header">
+                <div class="post-anon-name">
+                    <div class="anon-avatar" style="background:${tint};">${emoji}</div>
+                    <span class="anon-name-text">${name}</span>
+                    ${type ? `<span style="font-size:0.68rem;color:var(--text-light);font-weight:700;">${type}</span>` : ''}
+                </div>
+                <span class="post-time">${ago}</span>
+            </div>
+
+            <span class="post-cat" style="background:${cs.bg};color:${cs.color};display:inline-block;margin-bottom:10px;">${cs.label}</span>
+
+            <div class="post-body ${isLong ? 'collapsed' : ''}" id="body_${p.id}">${escHtml(p.content)}</div>
+            ${isLong
+                ? `<button class="read-more-btn" id="rmb_${p.id}" onclick="toggleExpand('${p.id}')">Read more ▾</button>`
+                : ''}
+
+            <div class="post-footer">
+                <button
+                    class="action-btn ${isLiked ? 'related' : ''}"
+                    id="relBtn_${p.id}"
+                    onclick="relate('${p.id}')">
+                    <span class="relate-icon">❤️</span>
+                    <span id="relCount_${p.id}">${p.relates}</span> relate
+                </button>
+                <button class="action-btn" onclick="toggleComments('${p.id}')">
+                    💬 ${comments.length} ${comments.length === 1 ? 'reply' : 'replies'}
+                </button>
+                <button class="expand-btn" onclick="toggleComments('${p.id}')">
+                    Reply ›
+                </button>
+            </div>
+
+            <!-- Comment section -->
+            <div class="comment-section" id="comments_${p.id}">
+                <div id="commentsList_${p.id}">${commentsHtml}</div>
+                <div class="comment-input-row">
+                    <textarea
+                        class="comment-input"
+                        id="commentInput_${p.id}"
+                        placeholder="Reply anonymously…"
+                        rows="1"
+                        maxlength="300"
+                        oninput="autoResize(this)"
+                    ></textarea>
+                    <button class="btn-send-comment" onclick="sendComment('${p.id}')">↑</button>
+                </div>
+            </div>
+        </div>`;
+    }
+
+    /* ───────────────────────────────────────────
+       INTERACTIONS
+    ─────────────────────────────────────────── */
+    function relate(id) {
+        const liked = getLiked();
+        if (liked.includes(id)) {
+            showToast('You already related to this ❤️');
+            return;
+        }
+
+        // Update relates count
+        const rels = getRelates();
+        const posts = getPosts();
+        const post  = posts.find(p => p.id === id);
+        rels[id]    = (rels[id] ?? (post ? post.relates : 0)) + 1;
+        YM.set('ym_anon_relates', rels);
+
+        // Mark as liked
+        liked.push(id);
+        YM.set('ym_anon_liked', liked);
+
+        // Update UI in place (no full re-render)
+        const countEl = document.getElementById('relCount_' + id);
+        const btnEl   = document.getElementById('relBtn_' + id);
+        if (countEl) countEl.textContent = rels[id];
+        if (btnEl)   btnEl.classList.add('related');
+
+        showToast('You relate ❤️');
+    }
+
+    function toggleExpand(id) {
+        const body = document.getElementById('body_' + id);
+        const btn  = document.getElementById('rmb_' + id);
+        if (!body) return;
+        const collapsed = body.classList.toggle('collapsed');
+        if (btn) btn.textContent = collapsed ? 'Read more ▾' : 'Show less ▴';
+    }
+
+    function toggleComments(id) {
+        const sec = document.getElementById('comments_' + id);
+        if (!sec) return;
+        sec.classList.toggle('open');
+        if (sec.classList.contains('open')) {
+            const inp = document.getElementById('commentInput_' + id);
+            if (inp) setTimeout(() => inp.focus(), 180);
+        }
+    }
+
+    function autoResize(el) {
+        el.style.height = 'auto';
+        el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    }
+
+    function sendComment(postId) {
+        const inp  = document.getElementById('commentInput_' + postId);
+        const text = inp ? inp.value.trim() : '';
+        if (!text) return;
+
+        if (isBlocked(text)) {
+            showToast('That content is not allowed here 🚫');
+            return;
+        }
+
+        const commentId = Date.now().toString(36) + Math.random().toString(36).slice(2);
+        const comms = getComments();
+        if (!comms[postId]) comms[postId] = [];
+
+        comms[postId].push({ id: commentId, text, ts: Date.now() });
+        YM.set('ym_anon_comments', comms);
+
+        // Render new comment inline
+        const listEl = document.getElementById('commentsList_' + postId);
+        if (listEl) {
+            const div = document.createElement('div');
+            div.className = 'comment-item';
+            div.innerHTML = `
+                <div class="anon-avatar" style="background:${anonTint(commentId)};width:28px;height:28px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.85rem;">${anonEmoji(commentId)}</div>
+                <div class="comment-bubble">
+                    <div class="comment-author">${anonName(commentId)}</div>
+                    <div class="comment-text">${escHtml(text)}</div>
+                    <div class="comment-time">just now</div>
+                </div>
+            `;
+            listEl.appendChild(div);
+        }
+
+        inp.value = '';
+        autoResize(inp);
+        showToast('Reply posted anonymously 🌿');
+    }
+
+    /* ───────────────────────────────────────────
+       WRITE MODAL
+    ─────────────────────────────────────────── */
+    function openWriteModal() {
+        document.getElementById('postContent').value = '';
+        document.getElementById('postCharCount').textContent = '0 / 500';
+        document.getElementById('postCharCount').className = 'char-counter';
+        document.getElementById('interventionBox').classList.remove('visible');
+        postType = 'share';
+        postCat  = 'academics';
+        document.querySelectorAll('.type-btn').forEach((b, i) => b.classList.toggle('sel', i === 0));
+        document.querySelectorAll('.cat-btn').forEach((b, i) => b.classList.toggle('sel', i === 0));
+        document.getElementById('writeModal').classList.add('open');
+    }
+
+    function pickType(btn, type) {
+        document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('sel'));
+        btn.classList.add('sel');
+        postType = type;
+    }
+
+    function pickCat(btn, cat) {
+        document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('sel'));
+        btn.classList.add('sel');
+        postCat = cat;
+    }
+
+    function onPostInput() {
+        const val = document.getElementById('postContent').value;
+        const len = val.length;
+        const el  = document.getElementById('postCharCount');
+        el.textContent = `${len} / 500`;
+        el.className   = 'char-counter' + (len > 420 ? ' warn' : '');
+
+        // Distress detection
+        document.getElementById('interventionBox')
+            .classList.toggle('visible', hasDistress(val));
+    }
+
+    function submitPost() {
+        const content = document.getElementById('postContent').value.trim();
+        if (!content)             { showToast('Write something first ✏️'); return; }
+        if (content.length < 10)  { showToast('Write at least 10 characters'); return; }
+        if (isBlocked(content))   {
+            showToast('That content is not allowed 🚫');
+            return;
+        }
+
+        const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+        const posts = getPosts();
+        const newPost = {
+            id, type: postType, cat: postCat,
+            content, relates: 0,
+            ts: Date.now(),
+            sessionId: mySessionId  // marks as "mine" for this session
+        };
+
+        posts.unshift(newPost);
+        YM.set('ym_anon_posts', posts.slice(0, 200));
+
+        document.getElementById('writeModal').classList.remove('open');
+
+        // Switch to feed and show new post
+        switchTab('all');
+        activeCat = '';
+        document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+        document.querySelector('.filter-chip[data-cat=""]').classList.add('active');
+        renderPosts();
+
+        showToast('Posted anonymously 🌿');
+    }
+
+    /* ───────────────────────────────────────────
+       MY POSTS
+    ─────────────────────────────────────────── */
+    function renderMine() {
+        const posts = getPosts().filter(p => p.sessionId === mySessionId);
+        const liked = getLiked();
+        const comms = getComments();
+        const el    = document.getElementById('mineView');
+
+        if (!posts.length) {
+            el.innerHTML = `
+                <div class="my-empty">
+                    <div class="my-empty-icon">🌱</div>
+                    <div class="my-empty-title">Nothing posted yet</div>
+                    <div class="my-empty-text">
+                        Posts you share this session appear here.
+                        Note: posts are anonymous — this list resets when you close the tab.
+                    </div>
+                </div>`;
+            return;
+        }
+
+        el.innerHTML = posts.map((p, i) => buildPostCard(p, liked, comms, i)).join('');
+    }
+
+    /* ───────────────────────────────────────────
+       UTILITIES
+    ─────────────────────────────────────────── */
+    function closeBg(e, id) {
+        if (e.target === e.currentTarget)
+            document.getElementById(id).classList.remove('open');
+    }
+
+    function timeAgo(ts) {
+        const diff = Date.now() - ts;
+        if (diff < 60000)            return 'just now';
+        if (diff < 3600000)          return Math.floor(diff/60000) + 'm ago';
+        if (diff < 86400000)         return Math.floor(diff/3600000) + 'h ago';
+        if (diff < 7 * 86400000)     return Math.floor(diff/86400000) + 'd ago';
+        return new Date(ts).toLocaleDateString('en-IN', { day:'numeric', month:'short' });
+    }
+
+    function escHtml(str) {
+        return (str || '')
+            .replace(/&/g,'&amp;')
+            .replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;')
+            .replace(/"/g,'&quot;');
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+    }
+
+    /* ───────────────────────────────────────────
+       INIT
+    ─────────────────────────────────────────── */
+    document.addEventListener('DOMContentLoaded', () => {
+        // Seed posts only if ym_anon_posts is empty
+        if (!YM.get('ym_anon_posts', null)) {
+            YM.set('ym_anon_posts', SEED_POSTS);
+        }
+        renderPosts();
+    });
+    </script>
+
+<script src="../shared/nav-component.js"></script>
+    <script src="../shared/crisis-support.js"></script>
+</body>
+</html>
+
+
+

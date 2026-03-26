@@ -1,0 +1,462 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>YodhaMind — Student Login</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,600;1,300;1,600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root{
+      --ink:#1a1625; --paper:#fdfcf8; --sage:#3d7a57; --sage-lt:#e4f2eb;
+      --rose:#e05a6d; --amber:#d4850a; --mist:#f0ede5; --border:#ddd9d0;
+      --text:#3d3a4a; --text-lt:#7c7a8a;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{height:100%}
+    body{
+      font-family:'DM Sans',sans-serif; background:var(--paper);
+      color:var(--text); min-height:100dvh;
+      display:grid; grid-template-columns:1.1fr 1fr;
+    }
+
+    /* ── Decorative left panel ── */
+    .left{
+      background:var(--ink); position:relative; overflow:hidden;
+      display:flex; flex-direction:column; justify-content:space-between;
+      padding:52px 56px;
+    }
+    .left::before{
+      content:''; position:absolute; inset:0;
+      background:
+        radial-gradient(ellipse 70% 55% at 30% 25%, rgba(61,122,87,.45) 0%, transparent 65%),
+        radial-gradient(ellipse 50% 65% at 80% 75%, rgba(224,90,109,.2) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 60% 10%, rgba(212,133,10,.18) 0%, transparent 55%);
+    }
+    .blob{
+      position:absolute; width:300px; height:300px; border-radius:50%;
+      background:radial-gradient(circle, rgba(61,122,87,.12) 0%, transparent 70%);
+      animation:drift 8s ease-in-out infinite alternate;
+    }
+    .blob:nth-child(1){top:-60px;right:-60px;animation-delay:0s}
+    .blob:nth-child(2){bottom:-80px;left:-40px;animation-delay:-4s;width:250px;height:250px}
+    @keyframes drift{from{transform:translate(0,0) scale(1)}to{transform:translate(20px,15px) scale(1.05)}}
+
+    .left-brand{position:relative;z-index:1;display:flex;align-items:center;gap:14px}
+    .brand-orb{
+      width:44px;height:44px;border-radius:14px;
+      background:linear-gradient(135deg,var(--sage),var(--amber));
+      display:flex;align-items:center;justify-content:center;font-size:1.4rem;
+    }
+    .brand-name{font-family:'Fraunces',serif;color:#fff;font-size:1.4rem;letter-spacing:-.03em}
+    .brand-tag{font-size:.68rem;color:rgba(255,255,255,.38);letter-spacing:.1em;text-transform:uppercase;margin-top:1px}
+
+    .left-hero{position:relative;z-index:1}
+    .left-hero h1{
+      font-family:'Fraunces',serif;font-weight:300;font-style:italic;
+      font-size:clamp(2.6rem,4.5vw,3.8rem);color:#fff;
+      line-height:1.1;letter-spacing:-.04em;margin-bottom:20px;
+    }
+    .left-hero h1 strong{font-weight:600;font-style:normal;color:#86efac}
+    .left-hero p{color:rgba(255,255,255,.52);font-size:.95rem;line-height:1.75;max-width:360px}
+
+    .features{position:relative;z-index:1;display:flex;flex-direction:column;gap:12px}
+    .feat{
+      display:flex;align-items:center;gap:13px;
+      background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);
+      border-radius:12px;padding:13px 16px;
+    }
+    .feat .fi{font-size:1.2rem;flex-shrink:0}
+    .feat .ft{font-size:.85rem;color:rgba(255,255,255,.65);line-height:1.4}
+    .feat .ft strong{color:#fff}
+
+    /* ── Right auth panel ── */
+    .right{
+      display:flex;align-items:center;justify-content:center;
+      padding:52px 48px;
+    }
+    .auth-card{width:100%;max-width:400px}
+
+    /* Tab switcher */
+    .tabs{
+      display:grid;grid-template-columns:1fr 1fr;
+      background:var(--mist);border-radius:12px;padding:4px;
+      margin-bottom:32px;
+    }
+    .tab{
+      padding:10px;border-radius:9px;border:none;background:transparent;
+      font-family:inherit;font-size:.88rem;font-weight:600;color:var(--text-lt);
+      cursor:pointer;transition:all .2s;
+    }
+    .tab.active{background:#fff;color:var(--ink);box-shadow:0 2px 8px rgba(0,0,0,.08)}
+
+    .form-hd{margin-bottom:24px}
+    .form-hd h2{font-family:'Fraunces',serif;font-weight:600;font-size:1.75rem;color:var(--ink);letter-spacing:-.03em;margin-bottom:5px}
+    .form-hd p{color:var(--text-lt);font-size:.88rem;line-height:1.55}
+
+    .fg{margin-bottom:14px}
+    .fg label{display:block;font-size:.79rem;font-weight:600;color:var(--ink);margin-bottom:6px;letter-spacing:.01em}
+    .inp-wrap{position:relative}
+    .inp-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:.95rem;pointer-events:none;color:#a0a0b0}
+    .inp{
+      width:100%;padding:11px 13px 11px 40px;
+      border:1.5px solid var(--border);border-radius:10px;
+      font-family:inherit;font-size:.9rem;background:#fff;color:var(--ink);
+      outline:none;transition:border-color .16s,box-shadow .16s;
+    }
+    .inp:focus{border-color:var(--sage);box-shadow:0 0 0 3px rgba(61,122,87,.1)}
+    .inp.err{border-color:var(--rose)}
+    select.inp{padding-left:40px;appearance:none}
+
+    .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+    .pwd-tog{
+      position:absolute;right:12px;top:50%;transform:translateY(-50%);
+      background:none;border:none;cursor:pointer;font-size:.9rem;color:#a0a0b0;
+      transition:color .14s;padding:4px;
+    }
+    .pwd-tog:hover{color:var(--ink)}
+
+    .alert{
+      padding:11px 14px;border-radius:10px;font-size:.83rem;margin-bottom:14px;
+      display:flex;align-items:flex-start;gap:8px;line-height:1.5;
+    }
+    .alert.err{background:#fef2f2;border:1px solid #fecaca;color:#991b1b}
+    .alert.ok{background:var(--sage-lt);border:1px solid rgba(61,122,87,.3);color:#1a4a2e}
+    .alert.hidden{display:none}
+
+    .btn-main{
+      width:100%;padding:13px;background:var(--ink);color:#fff;
+      border:none;border-radius:10px;font-family:inherit;font-size:.94rem;
+      font-weight:600;cursor:pointer;transition:background .15s,transform .1s;
+      display:flex;align-items:center;justify-content:center;gap:8px;
+      margin-top:6px;
+    }
+    .btn-main:hover:not(:disabled){background:#28233b;transform:translateY(-1px)}
+    .btn-main:disabled{opacity:.6;cursor:not-allowed}
+    .btn-spin{width:17px;height:17px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite}
+    @keyframes sp{to{transform:rotate(360deg)}}
+
+    .divider{text-align:center;color:var(--text-lt);font-size:.8rem;margin:18px 0 14px;position:relative}
+    .divider::before,.divider::after{content:'';position:absolute;top:50%;width:40%;height:1px;background:var(--border)}
+    .divider::before{left:0} .divider::after{right:0}
+
+    .btn-google{
+      width:100%;padding:11px;background:#fff;color:var(--ink);
+      border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:.88rem;
+      font-weight:600;cursor:pointer;transition:all .15s;
+      display:flex;align-items:center;justify-content:center;gap:9px;
+    }
+    .btn-google:hover{border-color:var(--ink);background:#fafaf8}
+
+    .back-link{
+      display:flex;align-items:center;justify-content:center;gap:6px;
+      color:var(--sage);font-size:.84rem;font-weight:600;
+      text-decoration:none;margin-top:18px;transition:gap .15s;
+    }
+    .back-link:hover{gap:9px}
+
+    .terms{font-size:.74rem;color:var(--text-lt);text-align:center;margin-top:14px;line-height:1.5}
+    .terms a{color:var(--sage);text-decoration:none}
+
+    /* verified pill */
+    .success-state{text-align:center;padding:10px 0}
+    .success-icon{font-size:3.5rem;margin-bottom:16px;display:block}
+    .success-state h3{font-family:'Fraunces',serif;font-size:1.5rem;margin-bottom:8px;color:var(--ink)}
+    .success-state p{color:var(--text-lt);font-size:.9rem;line-height:1.6;margin-bottom:24px}
+
+    @media(max-width:760px){
+      body{grid-template-columns:1fr}
+      .left{display:none}
+      .right{padding:36px 20px}
+    }
+    .right{animation:slideup .4s ease both}
+    @keyframes slideup{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  </style>
+</head>
+<body>
+
+<!-- Left decorative panel -->
+<div class="left">
+  <div class="blob"></div><div class="blob"></div>
+  <div class="left-brand">
+    <div class="brand-orb">🧠</div>
+    <div><div class="brand-name">YodhaMind</div><div class="brand-tag">For Students</div></div>
+  </div>
+  <div class="left-hero">
+    <h1>Your mind deserves<br>to <strong>thrive</strong>,<br>not just survive.</h1>
+    <p>Join thousands of students managing stress, building focus habits, and accessing real mental health support — all in one safe space.</p>
+  </div>
+  <div class="features">
+    <div class="feat"><span class="fi">🎮</span><div class="ft"><strong>Mind Games</strong> — Train focus &amp; memory with 5 cognitive games</div></div>
+    <div class="feat"><span class="fi">🧘</span><div class="ft"><strong>Daily Tools</strong> — Breathing, journaling, Pomodoro timer</div></div>
+    <div class="feat"><span class="fi">💬</span><div class="ft"><strong>Expert Chat</strong> — Counselor network starting soon</div></div>
+    <div class="feat"><span class="fi">📊</span><div class="ft"><strong>Mood Tracking</strong> — See your wellness trends over time</div></div>
+  </div>
+</div>
+
+<!-- Right auth panel -->
+<div class="right">
+  <div class="auth-card">
+
+    <!-- Tab switcher -->
+    <div class="tabs">
+      <button class="tab active" id="tabLogin" onclick="switchTab('login')">Sign In</button>
+      <button class="tab" id="tabSignup" onclick="switchTab('signup')">Create Account</button>
+    </div>
+
+    <!-- Alert -->
+    <div class="alert hidden" id="alert"><span id="alertIcon">⚠️</span><span id="alertMsg"></span></div>
+
+    <!-- LOGIN FORM -->
+    <div id="loginPane">
+      <div class="form-hd">
+        <h2>Welcome back</h2>
+        <p>Sign in to continue your wellness journey.</p>
+      </div>
+      <div class="fg">
+        <label>Email Address</label>
+        <div class="inp-wrap">
+          <span class="inp-icon">✉️</span>
+          <input type="email" class="inp" id="li-email" placeholder="your@email.com" autocomplete="email"/>
+        </div>
+      </div>
+      <div class="fg">
+        <label>Password</label>
+        <div class="inp-wrap">
+          <span class="inp-icon">🔑</span>
+          <input type="password" class="inp" id="li-pass" placeholder="Your password" autocomplete="current-password"/>
+          <button class="pwd-tog" type="button" onclick="togglePwd('li-pass',this)">👁️</button>
+        </div>
+      </div>
+      <button class="btn-main" id="loginBtn" onclick="doLogin()">
+        <span id="loginLabel">Sign In</span>
+      </button>
+      <div class="divider">or</div>
+      <button class="btn-google" onclick="doGoogle()">
+        <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
+        Continue with Google
+      </button>
+    </div>
+
+    <!-- SIGNUP FORM -->
+    <div id="signupPane" style="display:none">
+      <div class="form-hd">
+        <h2>Join YodhaMind</h2>
+        <p>Create your free account. No credit card needed.</p>
+      </div>
+      <div class="row2">
+        <div class="fg">
+          <label>First Name</label>
+          <div class="inp-wrap">
+            <span class="inp-icon">👤</span>
+            <input type="text" class="inp" id="su-fname" placeholder="Arjun" autocomplete="given-name"/>
+          </div>
+        </div>
+        <div class="fg">
+          <label>Last Name</label>
+          <div class="inp-wrap">
+            <span class="inp-icon">👤</span>
+            <input type="text" class="inp" id="su-lname" placeholder="Singh" autocomplete="family-name"/>
+          </div>
+        </div>
+      </div>
+      <div class="fg">
+        <label>Email Address</label>
+        <div class="inp-wrap">
+          <span class="inp-icon">✉️</span>
+          <input type="email" class="inp" id="su-email" placeholder="your@college.edu" autocomplete="email"/>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="fg">
+          <label>College / Institute</label>
+          <div class="inp-wrap">
+            <span class="inp-icon">🏛️</span>
+            <input type="text" class="inp" id="su-college" placeholder="IIT Delhi"/>
+          </div>
+        </div>
+        <div class="fg">
+          <label>Stream</label>
+          <div class="inp-wrap">
+            <span class="inp-icon">📚</span>
+            <select class="inp" id="su-stream">
+              <option value="">Select…</option>
+              <option>JEE Aspirant</option><option>NEET Aspirant</option>
+              <option>B.Tech / B.E.</option><option>BCA / MCA</option>
+              <option>MBA / BBA</option><option>Medical (MBBS)</option>
+              <option>Arts / Humanities</option><option>Commerce</option>
+              <option>Science (BSc)</option><option>Other</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="fg">
+        <label>Password</label>
+        <div class="inp-wrap">
+          <span class="inp-icon">🔑</span>
+          <input type="password" class="inp" id="su-pass" placeholder="Min 8 characters" autocomplete="new-password"/>
+          <button class="pwd-tog" type="button" onclick="togglePwd('su-pass',this)">👁️</button>
+        </div>
+      </div>
+      <button class="btn-main" id="signupBtn" onclick="doSignup()">
+        <span id="signupLabel">Create Free Account</span>
+      </button>
+      <p class="terms">By signing up you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.</p>
+    </div>
+
+    <!-- SUCCESS state after signup -->
+    <div id="successPane" style="display:none" class="success-state">
+      <span class="success-icon">🎉</span>
+      <h3>Account Created!</h3>
+      <p>Check your email for a confirmation link, then come back to sign in and start your wellness journey.</p>
+      <button class="btn-main" onclick="switchTab('login')">Back to Sign In</button>
+    </div>
+
+    <a href="index.html" class="back-link">← Back to platform</a>
+  </div>
+</div>
+
+<script>
+const SB_URL = 'https://qbrdfnhksqoaagstvdzk.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFicmRmbmhrc3FvYWFnc3R2ZHprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3ODc5NDcsImV4cCI6MjA4ODM2Mzk0N30.GHhXkO63AMUrRSUHW9GtjD27AjBDZ1PIsfeBWRgNqgQ';
+const sb = window.supabase.createClient(SB_URL, SB_KEY);
+
+// Auto-redirect if already logged in
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    const { data } = await sb.from('users').select('role').eq('id', session.user.id).single();
+    // If no user row exists yet (e.g. Google OAuth first login), create one as student
+    if (!data) {
+      const meta = session.user.user_metadata || {};
+      await sb.from('users').upsert({
+        id: session.user.id,
+        email: session.user.email,
+        name: meta.name || meta.full_name || session.user.email?.split('@')[0] || 'Student',
+        role: 'student',
+        is_verified: true
+      }, { onConflict: 'id' });
+      await sb.from('student_profiles').upsert({
+        user_id: session.user.id,
+        display_name: meta.name || meta.full_name || session.user.email?.split('@')[0] || 'Student'
+      }, { onConflict: 'user_id' });
+      window.location.href = 'student_dashboard.html';
+      return;
+    }
+    if (data?.role === 'student') window.location.href = 'student_dashboard.html';
+    else if (data?.role === 'psychologist') window.location.href = 'psychologist.html';
+  }
+})();
+
+function switchTab(tab) {
+  const isLogin = tab === 'login';
+  document.getElementById('tabLogin').className  = 'tab ' + (isLogin ? 'active' : '');
+  document.getElementById('tabSignup').className = 'tab ' + (!isLogin ? 'active' : '');
+  document.getElementById('loginPane').style.display  = isLogin ? 'block' : 'none';
+  document.getElementById('signupPane').style.display = !isLogin ? 'block' : 'none';
+  document.getElementById('successPane').style.display = 'none';
+  hideAlert();
+}
+
+async function doLogin() {
+  const email = document.getElementById('li-email').value.trim();
+  const pass  = document.getElementById('li-pass').value;
+  if (!email || !pass) return showAlert('err', 'Please enter your email and password.');
+  setLoading('login', true);
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if (error) { setLoading('login', false); return showAlert('err', error.message); }
+  // Role check
+  const { data: uRow } = await sb.from('users').select('role').eq('id', data.user.id).single();
+  // If no user row exists, create as student (first-time email login before profile was created)
+  if (!uRow) {
+    await sb.from('users').upsert({
+      id: data.user.id, email, name: email.split('@')[0],
+      role: 'student', is_verified: false
+    }, { onConflict: 'id' });
+  } else if (uRow.role === 'psychologist' || uRow.role === 'admin') {
+    await sb.auth.signOut();
+    setLoading('login', false);
+    return showAlert('err', 'This portal is for students. Psychologists please use the practitioner login.');
+  }
+  window.location.href = 'student_dashboard.html';
+}
+
+async function doSignup() {
+  const fname   = document.getElementById('su-fname').value.trim();
+  const lname   = document.getElementById('su-lname').value.trim();
+  const email   = document.getElementById('su-email').value.trim().toLowerCase();
+  const college = document.getElementById('su-college').value.trim();
+  const stream  = document.getElementById('su-stream').value;
+  const pass    = document.getElementById('su-pass').value;
+
+  if (!fname || !email || !pass) return showAlert('err', 'Name, email, and password are required.');
+  if (pass.length < 8)           return showAlert('err', 'Password must be at least 8 characters.');
+
+  setLoading('signup', true);
+  const { data, error } = await sb.auth.signUp({
+    email, password: pass,
+    options: {
+      data: { name: fname + ' ' + lname, role: 'student' },
+      emailRedirectTo: window.location.origin + '/student_auth.html'
+    }
+  });
+
+  if (error) { setLoading('signup', false); return showAlert('err', error.message); }
+
+  // Upsert extra profile fields
+  if (data.user) {
+    await sb.from('users').upsert({
+      id: data.user.id, email, name: fname + ' ' + lname,
+      role: 'student', college, stream, is_verified: false
+    }, { onConflict: 'id' });
+    await sb.from('student_profiles').upsert({
+      user_id: data.user.id,
+      display_name: fname + ' ' + lname,
+      college, stream
+    }, { onConflict: 'user_id' });
+  }
+
+  setLoading('signup', false);
+  document.getElementById('signupPane').style.display  = 'none';
+  document.getElementById('successPane').style.display = 'block';
+}
+
+async function doGoogle() {
+  await sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin + '/pages/student_auth.html' }
+  });
+}
+
+function showAlert(type, msg) {
+  const el = document.getElementById('alert');
+  el.className = 'alert ' + type;
+  document.getElementById('alertIcon').textContent = type === 'err' ? '⚠️' : '✅';
+  document.getElementById('alertMsg').textContent  = msg;
+}
+function hideAlert() { document.getElementById('alert').className = 'alert hidden'; }
+
+function setLoading(form, on) {
+  const btn   = document.getElementById(form + 'Btn');
+  const label = document.getElementById(form + 'Label');
+  btn.disabled = on;
+  label.innerHTML = on ? '<div class="btn-spin"></div>' : (form === 'login' ? 'Sign In' : 'Create Free Account');
+}
+
+function togglePwd(id, btn) {
+  const el = document.getElementById(id);
+  if (el.type === 'password') { el.type = 'text'; btn.textContent = '🙈'; }
+  else { el.type = 'password'; btn.textContent = '👁️'; }
+}
+
+['li-pass','li-email'].forEach(id => document.getElementById(id)?.addEventListener('keypress', e => { if (e.key === 'Enter') doLogin(); }));
+</script>
+    <script src="../shared/crisis-support.js"></script>
+</body>
+</html>
+
+
+

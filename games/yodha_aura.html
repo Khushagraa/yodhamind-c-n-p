@@ -1,0 +1,360 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Yodha Aura - Energy Flow</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        /* --- YodhaMind Design --- */
+        :root {
+            --bg: #0f172a;
+            --text: #f8fafc;
+            --primary: #667eea;
+        }
+        body {
+            margin: 0; padding: 0; background: var(--bg); color: var(--text);
+            font-family: 'Poppins', sans-serif; overflow: hidden;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100vh;
+            user-select: none; /* Prevents text selection on touch */
+            -webkit-user-select: none;
+        }
+        
+        /* Canvas */
+        canvas {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1; cursor: crosshair;
+            touch-action: none; /* Prevents scrolling on mobile */
+        }
+
+        /* UI Layer */
+        .ui-layer {
+            position: absolute; bottom: 40px; z-index: 10;
+            display: flex; gap: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 8px 12px; border-radius: 50px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            max-width: 90%;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .mode-btn {
+            background: transparent; border: 1px solid rgba(255,255,255,0.2);
+            color: rgba(255,255,255,0.7);
+            padding: 10px 20px; border-radius: 20px; cursor: pointer;
+            font-family: inherit; font-weight: 600; font-size: 0.85rem;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+        .mode-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+        .mode-btn.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white; border-color: transparent;
+            box-shadow: 0 0 15px rgba(102, 126, 234, 0.5);
+            transform: scale(1.05);
+        }
+
+        .instruction {
+            position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%);
+            pointer-events: none; text-align: center; opacity: 0.7;
+            animation: fadeOut 3s forwards 2.5s; z-index: 5;
+            width: 80%;
+            font-size: 0.9rem;
+        }
+        @keyframes fadeOut { to { opacity: 0; } }
+
+        /* Minimalist Ghost Buttons */
+        .ghost-btn {
+            position: absolute; top: 25px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: rgba(255, 255, 255, 0.8);
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.9rem;
+            cursor: pointer;
+            z-index: 100;
+            transition: all 0.3s;
+            backdrop-filter: blur(4px);
+            display: flex; align-items: center; gap: 6px;
+            text-decoration: none;
+        }
+        .ghost-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+        }
+
+        /* Mobile specific adjustments */
+        @media (max-width: 600px) {
+            .mode-btn { padding: 8px 16px; font-size: 0.8rem; }
+            .ui-layer { bottom: 30px; padding: 6px 10px; }
+            .instruction { font-size: 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="c"></canvas>
+
+    <button class="ghost-btn" onclick="window.location.href='../pages/index.html'" style="left: 25px;">
+        🏠 Home
+    </button>
+    <button class="ghost-btn" onclick="window.location.href='../pages/games.html'" style="right: 25px;">
+        ✕ Exit
+    </button>
+
+    <div class="instruction">
+        <h2>Interact with the Energy</h2>
+        <p>Touch or move cursor to influence the aura</p>
+    </div>
+
+    <div class="ui-layer">
+        <button class="mode-btn active" onclick="setMode('repel', this)">Repel</button>
+        <button class="mode-btn" onclick="setMode('attract', this)">Attract</button>
+        <button class="mode-btn" onclick="setMode('calm', this)">Calm</button>
+    </div>
+
+    <script>
+        /**
+         * Yodha Aura - Particle Physics Engine
+         * Optimized for Mobile & Retina Displays
+         */
+        const canvas = document.getElementById('c');
+        const ctx = canvas.getContext('2d');
+        
+        let width, height;
+        let particles = [];
+        let mouse = { x: -1000, y: -1000, active: false };
+        let mode = 'repel'; // repel, attract, calm
+        
+        // Configuration
+        const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const PIXEL_RATIO = window.devicePixelRatio || 1;
+        
+        // Optimisation: Reduce particles on mobile, standard on desktop
+        const PARTICLE_COUNT = IS_MOBILE ? 350 : 800;
+        const CONNECT_DIST = 60;
+        const MOUSE_RADIUS = IS_MOBILE ? 120 : 180;
+
+        class Particle {
+            constructor() {
+                this.init();
+            }
+
+            init() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = (Math.random() - 0.5) * 2;
+                this.size = (Math.random() * 2 + 1) * (IS_MOBILE ? 0.8 : 1); // Slightly smaller on mobile
+                this.baseColor = `hsl(${Math.random()*60 + 200}, 70%, 60%)`; // Blue/Purple range
+                this.color = this.baseColor;
+            }
+
+            update() {
+                // Mode Logic
+                if (mode !== 'calm') {
+                    const dx = mouse.x - this.x;
+                    const dy = mouse.y - this.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+
+                    if (dist < MOUSE_RADIUS) {
+                        const force = (MOUSE_RADIUS - dist) / MOUSE_RADIUS;
+                        const dirX = dx / dist;
+                        const dirY = dy / dist;
+
+                        if (mode === 'repel') {
+                            this.vx -= dirX * force * 2;
+                            this.vy -= dirY * force * 2;
+                            this.color = '#fff'; // Flash white
+                        } else if (mode === 'attract') {
+                            this.vx += dirX * force * 1.5;
+                            this.vy += dirY * force * 1.5;
+                            this.color = '#ffd700'; // Flash gold
+                        }
+                    } else {
+                        this.color = this.baseColor;
+                    }
+                } else {
+                    // Calm mode: drift slowly
+                    this.vx *= 0.9;
+                    this.vy *= 0.9;
+                }
+
+                // Physics
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Boundaries (Bounce)
+                if(this.x < 0 || this.x > width) this.vx *= -1;
+                if(this.y < 0 || this.y > height) this.vy *= -1;
+
+                // Calm drift base speed
+                if(mode === 'calm') {
+                    this.x += (Math.random()-0.5)*0.5;
+                    this.y += (Math.random()-0.5)*0.5;
+                } else {
+                    // Maintain some movement
+                    if (Math.abs(this.vx) < 0.5) this.vx += (Math.random()-0.5)*0.2;
+                    if (Math.abs(this.vy) < 0.5) this.vy += (Math.random()-0.5)*0.2;
+                }
+                
+                // Friction limits speed
+                this.vx *= 0.98;
+                this.vy *= 0.98;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+            }
+        }
+
+        function init() {
+            resize();
+            window.addEventListener('resize', resize);
+            
+            // Mouse Input
+            canvas.addEventListener('mousemove', e => {
+                const r = canvas.getBoundingClientRect();
+                mouse.x = (e.clientX - r.left) * (width / r.width);
+                mouse.y = (e.clientY - r.top) * (height / r.height);
+                mouse.active = true;
+            });
+            canvas.addEventListener('mouseleave', () => { mouse.active = false; });
+            canvas.addEventListener('mousedown', pulse);
+
+            // Touch Input (Mobile Optimized)
+            canvas.addEventListener('touchstart', e => {
+                e.preventDefault();
+                mouse.active = true;
+                updateTouch(e);
+                pulse(); // Pulse on tap
+            }, {passive: false});
+
+            canvas.addEventListener('touchmove', e => {
+                e.preventDefault(); // Prevent scrolling
+                updateTouch(e);
+            }, {passive: false});
+
+            canvas.addEventListener('touchend', () => {
+                mouse.active = false;
+            });
+
+            // Create Particles
+            for(let i=0; i<PARTICLE_COUNT; i++) {
+                particles.push(new Particle());
+            }
+            
+            loop();
+        }
+
+        function updateTouch(e) {
+            const r = canvas.getBoundingClientRect();
+            mouse.x = (e.touches[0].clientX - r.left) * (width / r.width);
+            mouse.y = (e.touches[0].clientY - r.top) * (height / r.height);
+        }
+
+        function resize() {
+            // High DPI Canvas Scaling
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            
+            canvas.style.width = w + "px";
+            canvas.style.height = h + "px";
+            
+            width = canvas.width = w * PIXEL_RATIO;
+            height = canvas.height = h * PIXEL_RATIO;
+            
+            // Scale context to match DPI
+            // Note: Since we are using coordinates directly mapped to canvas size, 
+            // we don't strictly need ctx.scale if we handle logic with 'width/height', 
+            // but resetting the particles ensures they don't get stuck off-screen.
+        }
+
+        // Expose to window for HTML buttons
+        window.setMode = function(m, btn) {
+            mode = m;
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            if(btn) btn.classList.add('active');
+        };
+
+        function pulse() {
+            const cx = mouse.active ? mouse.x : width/2;
+            const cy = mouse.active ? mouse.y : height/2;
+            
+            particles.forEach(p => {
+                const dx = p.x - cx;
+                const dy = p.y - cy;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if(dist < 300 * PIXEL_RATIO) {
+                    const force = (300 * PIXEL_RATIO - dist) / (300 * PIXEL_RATIO);
+                    p.vx += (dx/dist) * force * 20;
+                    p.vy += (dy/dist) * force * 20;
+                }
+            });
+        }
+
+        function loop() {
+            // Trails effect
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.2)'; 
+            ctx.fillRect(0, 0, width, height);
+
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            // Draw connections
+            ctx.strokeStyle = 'rgba(102, 126, 234, 0.15)';
+            ctx.lineWidth = 1 * PIXEL_RATIO; // Thicker lines on retina
+            
+            if(mode !== 'calm' && mouse.active) {
+                const connectLimit = CONNECT_DIST * PIXEL_RATIO; // Scale connection distance
+                const mouseRange = 200 * PIXEL_RATIO;
+
+                for(let i=0; i<particles.length; i++) {
+                    const p1 = particles[i];
+                    // Optimization: Check Taxicab distance to mouse first (faster than sqrt)
+                    if (Math.abs(p1.x - mouse.x) > mouseRange || Math.abs(p1.y - mouse.y) > mouseRange) continue;
+
+                    for(let j=i+1; j<particles.length; j++) {
+                        const p2 = particles[j];
+                        const dx = p1.x - p2.x;
+                        const dy = p1.y - p2.y;
+                        
+                        // Simple box check before expensive square calculation
+                        if (Math.abs(dx) > connectLimit || Math.abs(dy) > connectLimit) continue;
+
+                        const distSq = dx*dx + dy*dy;
+                        if(distSq < connectLimit * connectLimit) {
+                            ctx.beginPath();
+                            ctx.moveTo(p1.x, p1.y);
+                            ctx.lineTo(p2.x, p2.y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+
+            requestAnimationFrame(loop);
+        }
+
+        init();
+
+    </script>
+    <script src="../shared/crisis-support.js"></script>
+</body>
+</html>
+
+

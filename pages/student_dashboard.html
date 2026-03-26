@@ -1,0 +1,655 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>YodhaMind — My Dashboard</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,600;1,400&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root{
+      --ink:#1a1625; --bg:#f5f3ee; --white:#fff;
+      --sage:#3d7a57; --sage-lt:#e4f2eb; --sage-dk:#1e4a32;
+      --rose:#e05a6d; --rose-lt:#fde8eb;
+      --amber:#d4850a; --amber-lt:#fef3c7;
+      --blue:#3b82f6; --blue-lt:#eff6ff;
+      --border:#ddd9d0; --text:#3d3a4a; --text-lt:#7c7a8a;
+      --nav-w:240px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text)}
+
+    /* Guard */
+    #guard{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+    .gspin{width:38px;height:38px;border:3px solid var(--border);border-top-color:var(--sage);border-radius:50%;animation:sp .7s linear infinite}
+    @keyframes sp{to{transform:rotate(360deg)}}
+
+    /* Layout */
+    .layout{display:flex;min-height:100vh}
+
+    /* Nav */
+    .nav{
+      width:var(--nav-w);background:var(--ink);display:flex;flex-direction:column;
+      position:fixed;top:0;left:0;bottom:0;z-index:200;transition:transform .3s;
+    }
+    .nav-brand{padding:22px 18px 18px;border-bottom:1px solid rgba(255,255,255,.07)}
+    .nav-brand a{font-family:'Fraunces',serif;font-size:1.25rem;color:#fff;text-decoration:none;letter-spacing:-.03em;display:block;margin-bottom:3px}
+    .nav-brand .sub{font-size:.67rem;color:rgba(255,255,255,.3);letter-spacing:.09em;text-transform:uppercase}
+    .nav-profile{padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.07)}
+    .nav-avatar{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.05rem;color:#fff;margin-bottom:9px}
+    .nav-uname{font-weight:600;color:#fff;font-size:.9rem}
+    .nav-usub{font-size:.74rem;color:rgba(255,255,255,.4);margin-top:1px}
+    .notif-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(224,90,109,.2);border:1px solid rgba(224,90,109,.3);border-radius:20px;padding:3px 9px;font-size:.68rem;color:#fca5a5;font-weight:700;margin-top:6px}
+    .nav-items{flex:1;padding:12px 10px;overflow-y:auto}
+    .nav-sec{font-size:.62rem;color:rgba(255,255,255,.25);letter-spacing:.1em;text-transform:uppercase;padding:7px 10px 4px;margin-top:5px}
+    .nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:rgba(255,255,255,.5);font-size:.85rem;font-weight:500;cursor:pointer;transition:all .15s;text-decoration:none;margin-bottom:1px;border:none;background:none;width:100%;text-align:left;font-family:inherit}
+    .nav-item:hover{background:rgba(255,255,255,.07);color:#fff}
+    .nav-item.active{background:var(--sage);color:#fff}
+    .nav-item .ic{font-size:1rem;flex-shrink:0;width:20px;text-align:center}
+    .nav-foot{padding:12px 10px;border-top:1px solid rgba(255,255,255,.07)}
+    .btn-logout{display:flex;align-items:center;gap:9px;width:100%;padding:10px 12px;border-radius:10px;background:none;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.45);font-family:inherit;font-size:.84rem;cursor:pointer;transition:all .15s}
+    .btn-logout:hover{background:rgba(224,90,109,.15);border-color:rgba(224,90,109,.4);color:#fca5a5}
+
+    /* Mobile header */
+    .mob-hd{display:none;position:fixed;top:0;left:0;right:0;height:58px;background:var(--ink);z-index:199;align-items:center;justify-content:space-between;padding:0 16px}
+    .mob-hd .ml{font-family:'Fraunces',serif;color:#fff;font-size:1.1rem}
+    .hamburger{background:none;border:none;color:#fff;font-size:1.4rem;cursor:pointer}
+    #overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:199;backdrop-filter:blur(2px)}
+    #overlay.on{display:block}
+
+    /* Main */
+    .main{margin-left:var(--nav-w);flex:1;display:flex;flex-direction:column}
+    .topbar{background:#fff;border-bottom:1px solid var(--border);padding:0 32px;height:62px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+    .page-title{font-family:'Fraunces',serif;font-size:1.35rem;letter-spacing:-.025em}
+    .topbar-right{display:flex;align-items:center;gap:12px}
+    .topbar-date{font-size:.8rem;color:var(--text-lt)}
+    .btn-chat{display:flex;align-items:center;gap:6px;padding:7px 14px;background:var(--sage);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;text-decoration:none;transition:background .14s}
+    .btn-chat:hover{background:var(--sage-dk)}
+    .chat-dot{width:8px;height:8px;border-radius:50%;background:#86efac;animation:pulse 1.5s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    .content{padding:28px 32px;flex:1}
+
+    /* Views */
+    .view{display:none}
+    .view.active{display:block;animation:fup .3s ease both}
+    @keyframes fup{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+    /* Greeting */
+    .greeting{margin-bottom:28px}
+    .greeting h2{font-family:'Fraunces',serif;font-weight:300;font-style:italic;font-size:1.8rem;letter-spacing:-.03em;color:var(--ink)}
+    .greeting h2 strong{font-weight:600;font-style:normal}
+    .greeting p{color:var(--text-lt);font-size:.9rem;margin-top:4px}
+
+    /* Stat cards */
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:26px}
+    .sc{background:#fff;border:1px solid var(--border);border-radius:14px;padding:18px 20px;transition:transform .15s}
+    .sc:hover{transform:translateY(-2px)}
+    .sc.hl{background:var(--ink)}
+    .sc-lbl{font-size:.76rem;color:var(--text-lt);font-weight:500;margin-bottom:5px}
+    .sc.hl .sc-lbl{color:rgba(255,255,255,.45)}
+    .sc-val{font-family:'Fraunces',serif;font-size:1.9rem;color:var(--ink);line-height:1}
+    .sc.hl .sc-val{color:#fff}
+    .sc-sub{font-size:.74rem;color:var(--sage);margin-top:3px;font-weight:600}
+    .sc.hl .sc-sub{color:#86efac}
+
+    /* Mood tracker */
+    .card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:22px}
+    .card-title{font-family:'Fraunces',serif;font-size:1.05rem;letter-spacing:-.02em;margin-bottom:16px}
+    .mood-row{display:flex;gap:10px;flex-wrap:wrap}
+    .mood-btn{
+      flex:1;min-width:60px;padding:12px 8px;border-radius:12px;border:2px solid transparent;
+      background:var(--bg);font-size:1.5rem;cursor:pointer;transition:all .2s;text-align:center;
+    }
+    .mood-btn:hover{transform:scale(1.08);border-color:var(--sage)}
+    .mood-btn.selected{border-color:var(--sage);background:var(--sage-lt);transform:scale(1.08)}
+    .mood-btn .ml{font-size:.72rem;color:var(--text-lt);display:block;margin-top:4px;font-weight:600}
+    .mood-note{width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:.88rem;margin-top:12px;resize:none;outline:none;transition:border-color .15s}
+    .mood-note:focus{border-color:var(--sage)}
+    .btn-log{margin-top:12px;padding:10px 22px;background:var(--ink);color:#fff;border:none;border-radius:10px;font-family:inherit;font-size:.86rem;font-weight:600;cursor:pointer;transition:background .14s}
+    .btn-log:hover{background:#28233b}
+
+    /* Grid section */
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+
+    /* Notifications list */
+    .notif-list{display:flex;flex-direction:column;gap:8px}
+    .notif-item{display:flex;align-items:flex-start;gap:11px;padding:12px 14px;background:var(--bg);border-radius:10px;cursor:pointer;transition:background .13s;border:1px solid transparent}
+    .notif-item:hover{background:#ece9e1}
+    .notif-item.unread{background:var(--sage-lt);border-color:rgba(61,122,87,.2)}
+    .notif-icon{font-size:1.3rem;flex-shrink:0;margin-top:1px}
+    .notif-title{font-size:.86rem;font-weight:600;color:var(--ink);margin-bottom:2px}
+    .notif-body{font-size:.8rem;color:var(--text-lt);line-height:1.5}
+    .notif-time{font-size:.72rem;color:var(--text-lt);margin-top:3px}
+    .empty-notif{text-align:center;padding:28px;color:var(--text-lt);font-size:.88rem}
+
+    /* Sessions list */
+    .session-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--bg);border-radius:12px;margin-bottom:8px}
+    .session-avatar{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;color:#fff;flex-shrink:0}
+    .session-info .sn{font-weight:600;font-size:.9rem;color:var(--ink)}
+    .session-info .ss{font-size:.78rem;color:var(--text-lt);margin-top:2px}
+    .session-action{margin-left:auto;display:flex;align-items:center;gap:8px}
+    .pill{display:inline-block;padding:3px 9px;border-radius:20px;font-size:.72rem;font-weight:700}
+    .pill.pending  {background:var(--amber-lt);color:var(--amber)}
+    .pill.confirmed{background:var(--sage-lt);color:var(--sage-dk)}
+    .pill.completed{background:var(--blue-lt);color:var(--blue)}
+    .pill.cancelled{background:#f3f4f6;color:#6b7280}
+
+    .btn-sm{padding:5px 11px;border-radius:7px;border:1.5px solid var(--sage);color:var(--sage-dk);background:var(--sage-lt);font-family:inherit;font-size:.76rem;font-weight:600;cursor:pointer;transition:all .14s;text-decoration:none;display:inline-block}
+    .btn-sm:hover{background:var(--sage);color:#fff}
+
+    /* Quick tools */
+    .tools-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .tool-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:18px;text-align:center;cursor:pointer;transition:all .2s;text-decoration:none;display:block}
+    .tool-card:hover{transform:translateY(-3px);border-color:var(--sage);box-shadow:0 6px 20px rgba(61,122,87,.12)}
+    .tool-icon{font-size:2rem;margin-bottom:8px;display:block}
+    .tool-name{font-weight:600;font-size:.86rem;color:var(--ink);margin-bottom:3px}
+    .tool-sub{font-size:.75rem;color:var(--text-lt)}
+
+    /* Toast */
+    .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--ink);color:#fff;padding:11px 20px;border-radius:12px;font-size:.85rem;font-weight:600;z-index:3000;transition:transform .28s,opacity .28s;opacity:0;pointer-events:none}
+    .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+    .toast.ok{background:var(--sage-dk)}
+
+    /* Mood chart (simple bar chart) */
+    .mood-chart{display:flex;align-items:flex-end;gap:8px;height:80px;padding:0 4px}
+    .mood-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+    .mood-bar{width:100%;border-radius:6px 6px 0 0;background:var(--sage-lt);border:1px solid rgba(61,122,87,.2);transition:height .4s ease;min-height:4px}
+    .mood-bar-lbl{font-size:.66rem;color:var(--text-lt)}
+
+    /* Profile form */
+    .prof-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .fg{margin-bottom:0}
+    .fg.full{grid-column:1/-1}
+    .form-label{display:block;font-size:.79rem;font-weight:600;color:var(--ink);margin-bottom:5px}
+    .form-inp{width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:.88rem;background:#fff;color:var(--ink);outline:none;transition:border-color .14s}
+    .form-inp:focus{border-color:var(--sage)}
+    select.form-inp{appearance:none}
+    .btn-save{padding:10px 22px;background:var(--ink);color:#fff;border:none;border-radius:10px;font-family:inherit;font-size:.86rem;font-weight:600;cursor:pointer;margin-top:16px}
+
+    /* Responsive */
+    @media(max-width:1100px){.stats{grid-template-columns:1fr 1fr}}
+    @media(max-width:900px){.grid2{grid-template-columns:1fr}}
+    @media(max-width:768px){
+      .nav{transform:translateX(-100%)} .nav.on{transform:translateX(0)}
+      .mob-hd{display:flex} .main{margin-left:0;padding-top:58px}
+      .topbar{display:none} .content{padding:18px 14px}
+      .stats{grid-template-columns:1fr 1fr;gap:10px}
+      .tools-grid{grid-template-columns:1fr 1fr}
+      .prof-grid{grid-template-columns:1fr}
+    }
+    @media(max-width:480px){.stats{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+
+<div id="guard"><div class="gspin"></div><p style="color:var(--text-lt);font-size:.88rem">Loading your dashboard…</p></div>
+
+<div id="overlay" onclick="closeMobileNav()"></div>
+
+<div class="mob-hd">
+  <span class="ml">🧠 YodhaMind</span>
+  <button class="hamburger" onclick="openMobileNav()">☰</button>
+</div>
+
+<div class="layout" id="dashLayout" style="display:none">
+  <aside class="nav" id="sidebar">
+    <div class="nav-brand"><a href="index.html">🧠 YodhaMind</a><div class="sub">Student Dashboard</div></div>
+    <div class="nav-profile">
+      <div class="nav-avatar" id="navAvatar" style="background:var(--sage)">YM</div>
+      <div class="nav-uname" id="navName">Loading…</div>
+      <div class="nav-usub" id="navSub">Student</div>
+      <div class="notif-badge" id="navNotifBadge" style="display:none">🔔 <span id="navNotifCount">0</span> new</div>
+    </div>
+    <nav class="nav-items">
+      <div class="nav-sec">My Space</div>
+      <button class="nav-item active" onclick="sv('home',this)"><span class="ic">🏠</span> Home</button>
+      <button class="nav-item" onclick="sv('mood',this)"><span class="ic">🌡️</span> Mood Log</button>
+      <button class="nav-item" onclick="sv('notifs',this)"><span class="ic">🔔</span> Notifications</button>
+      <div class="nav-sec">Support</div>
+      <button class="nav-item" onclick="sv('sessions',this)"><span class="ic">📅</span> My Sessions</button>
+      <button class="nav-item" onclick="sv('tools',this)"><span class="ic">🎮</span> Wellness Tools</button>
+      <div class="nav-sec">Account</div>
+      <button class="nav-item" onclick="sv('profile',this)"><span class="ic">👤</span> Profile</button>
+    </nav>
+    <div class="nav-foot"><button class="btn-logout" onclick="doLogout()"><span>🚪</span> Sign Out</button></div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="page-title" id="pageTitle">Home</div>
+      <div class="topbar-right">
+        <span class="topbar-date" id="todayDate"></span>
+        <a href="#" class="btn-chat" style="opacity:0.6; pointer-events:none;"><div class="chat-dot" style="background:#94a3b8; animation:none;"></div> Chat (Soon)</a>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- HOME -->
+      <div class="view active" id="view-home">
+        <div class="greeting">
+          <h2 id="greetMsg">Good morning, <strong>Student</strong> 👋</h2>
+          <p id="greetSub">Here's your wellness overview for today.</p>
+        </div>
+        <div class="stats">
+          <div class="sc hl"><div class="sc-lbl">Wellness Score</div><div class="sc-val" id="sWellness">—</div><div class="sc-sub">Your current state</div></div>
+          <div class="sc"><div class="sc-lbl">Day Streak 🔥</div><div class="sc-val" id="sStreak">0</div><div class="sc-sub">Keep it up!</div></div>
+          <div class="sc"><div class="sc-lbl">Mood Today</div><div class="sc-val" id="sMood">—</div><div class="sc-sub">Last logged</div></div>
+          <div class="sc"><div class="sc-lbl">Sessions</div><div class="sc-val" id="sSessions">0</div><div class="sc-sub">Total booked</div></div>
+        </div>
+
+        <div class="grid2" style="margin-bottom:16px">
+          <!-- Quick mood check -->
+          <div class="card">
+            <div class="card-title">How are you feeling right now?</div>
+            <div class="mood-row" id="quickMoodRow">
+              <button class="mood-btn" data-score="1" onclick="selectMood(this)">😞<span class="ml">Awful</span></button>
+              <button class="mood-btn" data-score="2" onclick="selectMood(this)">😕<span class="ml">Low</span></button>
+              <button class="mood-btn" data-score="3" onclick="selectMood(this)">😐<span class="ml">Okay</span></button>
+              <button class="mood-btn" data-score="4" onclick="selectMood(this)">🙂<span class="ml">Good</span></button>
+              <button class="mood-btn" data-score="5" onclick="selectMood(this)">😄<span class="ml">Great</span></button>
+            </div>
+            <textarea class="mood-note" id="moodNote" rows="2" placeholder="Optional: what's on your mind?"></textarea>
+            <button class="btn-log" onclick="logMood()">Log Mood</button>
+          </div>
+
+          <!-- Recent notifications -->
+          <div class="card">
+            <div class="card-title">Recent Notifications</div>
+            <div class="notif-list" id="homeNotifList">
+              <div class="empty-notif">Loading…</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mood trend chart -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-title">Mood Trend — Last 7 Days</div>
+          <div class="mood-chart" id="moodChart"></div>
+        </div>
+
+        <!-- Quick tools -->
+        <div class="card">
+          <div class="card-title">Quick Access</div>
+          <div class="tools-grid" style="margin-top:4px">
+            <a class="tool-card" href="index.html#breathing"><span class="tool-icon">🌬️</span><div class="tool-name">Breathing</div><div class="tool-sub">Box &amp; 4-7-8</div></a>
+            <a class="tool-card" href="games.html"><span class="tool-icon">🎮</span><div class="tool-name">Mind Games</div><div class="tool-sub">5 focus games</div></a>
+            <a class="tool-card" href="index.html#journal"><span class="tool-icon">📔</span><div class="tool-name">Journal</div><div class="tool-sub">Write &amp; reflect</div></a>
+            <a class="tool-card" href="#" style="opacity:0.6; pointer-events:none;"><span class="tool-icon">💬</span><div class="tool-name">Chat</div><div class="tool-sub">Coming Soon</div></a>
+            <a class="tool-card" href="#" style="opacity:0.6; pointer-events:none;"><span class="tool-icon">🩺</span><div class="tool-name">Book Session</div><div class="tool-sub">Coming Soon</div></a>
+            <a class="tool-card" href="index.html#assessment"><span class="tool-icon">📊</span><div class="tool-name">Assessment</div><div class="tool-sub">Check your wellness</div></a>
+          </div>
+        </div>
+      </div>
+
+      <!-- MOOD LOG -->
+      <div class="view" id="view-mood">
+        <div class="card">
+          <div class="card-title">Log Your Mood</div>
+          <div class="mood-row" id="fullMoodRow">
+            <button class="mood-btn" data-score="1" onclick="selectMoodFull(this)">😞<span class="ml">Awful</span></button>
+            <button class="mood-btn" data-score="2" onclick="selectMoodFull(this)">😕<span class="ml">Low</span></button>
+            <button class="mood-btn" data-score="3" onclick="selectMoodFull(this)">😐<span class="ml">Okay</span></button>
+            <button class="mood-btn" data-score="4" onclick="selectMoodFull(this)">🙂<span class="ml">Good</span></button>
+            <button class="mood-btn" data-score="5" onclick="selectMoodFull(this)">😄<span class="ml">Great</span></button>
+          </div>
+          <textarea class="mood-note" id="fullMoodNote" rows="3" style="margin-top:14px" placeholder="What's influencing your mood? (optional)"></textarea>
+          <button class="btn-log" onclick="logMoodFull()">Save Mood Entry</button>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <div class="card-title">Mood History</div>
+          <div id="moodHistoryList" style="margin-top:4px"><p style="color:var(--text-lt);font-size:.88rem">Loading…</p></div>
+        </div>
+      </div>
+
+      <!-- NOTIFICATIONS -->
+      <div class="view" id="view-notifs">
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <div class="card-title" style="margin-bottom:0">Notifications</div>
+            <button class="btn-sm" onclick="markAllRead()">Mark all read</button>
+          </div>
+          <div class="notif-list" id="fullNotifList"><div class="empty-notif">Loading…</div></div>
+        </div>
+      </div>
+
+      <!-- MY SESSIONS -->
+      <div class="view" id="view-sessions">
+        <div class="card">
+          <div class="card-title">My Session Requests</div>
+          <div id="sessionsList"><p style="color:var(--text-lt);font-size:.88rem;padding:10px 0">Loading…</p></div>
+        </div>
+      </div>
+
+      <!-- TOOLS -->
+      <div class="view" id="view-tools">
+        <div class="card">
+          <div class="card-title">Wellness Tools</div>
+          <div class="tools-grid" style="margin-top:4px">
+            <a class="tool-card" href="index.html#breathing"><span class="tool-icon">🌬️</span><div class="tool-name">Breathing</div><div class="tool-sub">Guided exercises</div></a>
+            <a class="tool-card" href="games.html"><span class="tool-icon">🧩</span><div class="tool-name">Mind Games</div><div class="tool-sub">5 cognitive games</div></a>
+            <a class="tool-card" href="index.html#journal"><span class="tool-icon">📔</span><div class="tool-name">Journal</div><div class="tool-sub">Daily reflection</div></a>
+            <a class="tool-card" href="index.html#pomodoro"><span class="tool-icon">⏱️</span><div class="tool-name">Pomodoro</div><div class="tool-sub">Focus timer</div></a>
+            <a class="tool-card" href="index.html#assessment"><span class="tool-icon">🧪</span><div class="tool-name">Self-Assessment</div><div class="tool-sub">Stress &amp; Anxiety</div></a>
+            <a class="tool-card" href="#" style="opacity:0.6; pointer-events:none;"><span class="tool-icon">💬</span><div class="tool-name">Expert Chat</div><div class="tool-sub">Coming Soon</div></a>
+          </div>
+        </div>
+      </div>
+
+      <!-- PROFILE -->
+      <div class="view" id="view-profile">
+        <div class="card">
+          <div class="card-title">My Profile</div>
+          <div class="prof-grid">
+            <div class="fg"><label class="form-label">Full Name</label><input type="text" class="form-inp" id="pn"/></div>
+            <div class="fg"><label class="form-label">College / Institute</label><input type="text" class="form-inp" id="pc"/></div>
+            <div class="fg"><label class="form-label">Stream</label>
+              <select class="form-inp" id="pst">
+                <option value="">Select…</option>
+                <option>JEE Aspirant</option><option>NEET Aspirant</option>
+                <option>B.Tech / B.E.</option><option>BCA / MCA</option>
+                <option>MBA / BBA</option><option>Medical (MBBS)</option>
+                <option>Arts / Humanities</option><option>Commerce</option>
+                <option>Science (BSc)</option><option>Other</option>
+              </select>
+            </div>
+            <div class="fg"><label class="form-label">Year of Study</label>
+              <select class="form-inp" id="pyr">
+                <option value="1">1st Year</option><option value="2">2nd Year</option>
+                <option value="3">3rd Year</option><option value="4">4th Year</option>
+                <option value="5">5th Year</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn-save" onclick="saveProfile()">Save Profile</button>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SB_URL = 'https://qbrdfnhksqoaagstvdzk.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFicmRmbmhrc3FvYWFnc3R2ZHprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3ODc5NDcsImV4cCI6MjA4ODM2Mzk0N30.GHhXkO63AMUrRSUHW9GtjD27AjBDZ1PIsfeBWRgNqgQ';
+const sb = window.supabase.createClient(SB_URL, SB_KEY);
+
+let me = null, profile = null;
+let selectedMood = null, selectedMoodFull = null;
+
+// ── Auth Guard ──────────────────────────────────────────────
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return go('student_auth.html');
+  me = session.user;
+  const { data: u } = await sb.from('users').select('role').eq('id', me.id).single();
+  if (!u || u.role === 'psychologist' || u.role === 'admin') { await sb.auth.signOut(); return go('student_auth.html'); }
+  document.getElementById('guard').style.display = 'none';
+  document.getElementById('dashLayout').style.display = 'flex';
+  await boot();
+  sb.auth.onAuthStateChange(ev => { if (ev === 'SIGNED_OUT') go('student_auth.html'); });
+
+  // Realtime: notifications
+  sb.channel('notifs').on('postgres_changes',
+    { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${me.id}` },
+    () => { loadNotifs(); updateNavBadge(); }
+  ).subscribe();
+})();
+
+function go(u) { window.location.href = u; }
+
+async function boot() {
+  // Date
+  document.getElementById('todayDate').textContent =
+    new Date().toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long' });
+
+  // Load profile
+  const { data: p } = await sb.from('student_profiles').select('*').eq('user_id', me.id).single();
+  profile = p;
+  if (p) {
+    const name   = p.display_name || me.email?.split('@')[0] || 'Student';
+    const initls = name.trim().split(/\s+/).map(w => w[0]).join('').slice(0,2).toUpperCase();
+    document.getElementById('navAvatar').textContent = initls;
+    document.getElementById('navName').textContent   = name;
+    document.getElementById('navSub').textContent    = p.stream || 'Student';
+    document.getElementById('sWellness').textContent = p.wellness_score || 50;
+    document.getElementById('sStreak').textContent   = p.streak_days || 0;
+    document.getElementById('sSessions').textContent = p.total_sessions || 0;
+    fillProfileForm(p);
+    // Greet
+    const h = new Date().getHours();
+    const g = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+    document.getElementById('greetMsg').innerHTML = `${g}, <strong>${name.split(' ')[0]}</strong> 👋`;
+  }
+
+  // Today's mood
+  const today = new Date().toISOString().slice(0, 10);
+  const { data: tm } = await sb.from('mood_logs').select('mood,label').eq('user_id', me.id)
+    .gte('logged_at', today + 'T00:00:00').order('logged_at', { ascending: false }).limit(1);
+  const moodEmojis = ['', '😞', '😕', '😐', '🙂', '😄'];
+  document.getElementById('sMood').textContent = tm?.[0] ? moodEmojis[tm[0].mood] : '—';
+
+  await loadNotifs();
+  await updateNavBadge();
+  await loadSessions();
+  await renderMoodChart();
+}
+
+// ── Mood ────────────────────────────────────────────────────
+function selectMood(el) {
+  document.querySelectorAll('#quickMoodRow .mood-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedMood = parseInt(el.dataset.score);
+}
+function selectMoodFull(el) {
+  document.querySelectorAll('#fullMoodRow .mood-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedMoodFull = parseInt(el.dataset.score);
+}
+
+const MOOD_LABELS = ['', 'Awful', 'Low', 'Okay', 'Good', 'Great'];
+const MOOD_EMOJIS = ['', '😞', '😕', '😐', '🙂', '😄'];
+
+async function logMood() {
+  if (!selectedMood) return toast('Pick a mood first');
+  const note = document.getElementById('moodNote').value.trim();
+  await sb.from('mood_logs').insert({ user_id: me.id, mood: selectedMood, label: MOOD_LABELS[selectedMood], note });
+  document.getElementById('sMood').textContent = MOOD_EMOJIS[selectedMood];
+  document.getElementById('moodNote').value = '';
+  document.querySelectorAll('#quickMoodRow .mood-btn').forEach(b => b.classList.remove('selected'));
+  selectedMood = null;
+  toast('Mood logged ✓', 'ok');
+  renderMoodChart();
+}
+
+async function logMoodFull() {
+  if (!selectedMoodFull) return toast('Pick a mood first');
+  const note = document.getElementById('fullMoodNote').value.trim();
+  await sb.from('mood_logs').insert({ user_id: me.id, mood: selectedMoodFull, label: MOOD_LABELS[selectedMoodFull], note });
+  document.getElementById('fullMoodNote').value = '';
+  document.querySelectorAll('#fullMoodRow .mood-btn').forEach(b => b.classList.remove('selected'));
+  selectedMoodFull = null;
+  toast('Mood logged ✓', 'ok');
+  await loadMoodHistory();
+}
+
+async function renderMoodChart() {
+  const days = 7;
+  const since = new Date(); since.setDate(since.getDate() - days);
+  const { data } = await sb.from('mood_logs').select('mood,logged_at').eq('user_id', me.id)
+    .gte('logged_at', since.toISOString()).order('logged_at');
+  // Build day buckets
+  const buckets = {};
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    buckets[key] = null;
+  }
+  (data || []).forEach(r => {
+    const k = r.logged_at.slice(0, 10);
+    if (k in buckets) buckets[k] = r.mood;
+  });
+  const chart = document.getElementById('moodChart');
+  chart.innerHTML = '';
+  Object.entries(buckets).forEach(([date, score]) => {
+    const pct = score ? (score / 5) * 100 : 8;
+    const day = new Date(date + 'T12:00:00').toLocaleDateString('en-IN', { weekday: 'short' });
+    const col = score ? `rgba(61,122,87,${0.3 + score * 0.14})` : '#ece9e1';
+    chart.innerHTML += `<div class="mood-bar-wrap">
+      <div class="mood-bar" style="height:${pct}%;background:${col}"></div>
+      <div class="mood-bar-lbl">${day}</div>
+    </div>`;
+  });
+}
+
+async function loadMoodHistory() {
+  const { data } = await sb.from('mood_logs').select('mood,label,note,logged_at')
+    .eq('user_id', me.id).order('logged_at', { ascending: false }).limit(20);
+  const el = document.getElementById('moodHistoryList');
+  if (!data || data.length === 0) { el.innerHTML = '<p style="color:var(--text-lt);font-size:.88rem">No mood entries yet.</p>'; return; }
+  el.innerHTML = data.map(r => `
+    <div class="session-item" style="margin-bottom:8px">
+      <div style="font-size:1.5rem">${MOOD_EMOJIS[r.mood]}</div>
+      <div class="session-info"><div class="sn">${r.label} — <span style="font-size:.78rem;color:var(--text-lt)">${fmtDate(r.logged_at)}</span></div>${r.note ? `<div class="ss">${esc(r.note)}</div>` : ''}</div>
+    </div>`).join('');
+}
+
+// ── Notifications ────────────────────────────────────────────
+let allNotifs = [];
+async function loadNotifs() {
+  const { data } = await sb.from('notifications').select('*').eq('user_id', me.id)
+    .order('created_at', { ascending: false }).limit(20);
+  allNotifs = data || [];
+  renderNotifsHome();
+  renderNotifsFull();
+}
+
+function renderNotifsHome() {
+  const el = document.getElementById('homeNotifList');
+  const items = allNotifs.slice(0, 4);
+  el.innerHTML = items.length === 0
+    ? `<div class="empty-notif">🎉 You're all caught up!</div>`
+    : items.map(n => notifHTML(n)).join('');
+}
+
+function renderNotifsFull() {
+  const el = document.getElementById('fullNotifList');
+  el.innerHTML = allNotifs.length === 0
+    ? `<div class="empty-notif">No notifications yet.</div>`
+    : allNotifs.map(n => notifHTML(n)).join('');
+}
+
+function notifHTML(n) {
+  const icons = { booking_confirmed:'✅', booking_cancelled:'❌', new_message:'💬', new_booking:'📅' };
+  const age = relTime(n.created_at);
+  return `<div class="notif-item ${n.is_read ? '' : 'unread'}" onclick="openNotif('${n.id}','${n.link||''}')">
+    <div class="notif-icon">${icons[n.type] || '🔔'}</div>
+    <div>
+      <div class="notif-title">${esc(n.title)}</div>
+      ${n.body ? `<div class="notif-body">${esc(n.body)}</div>` : ''}
+      <div class="notif-time">${age}</div>
+    </div>
+  </div>`;
+}
+
+async function openNotif(id, link) {
+  await sb.from('notifications').update({ is_read: true }).eq('id', id).eq('user_id', me.id);
+  if (link) window.location.href = link;
+  else { await loadNotifs(); await updateNavBadge(); }
+}
+
+async function markAllRead() {
+  await sb.from('notifications').update({ is_read: true }).eq('user_id', me.id).eq('is_read', false);
+  await loadNotifs(); await updateNavBadge(); toast('All marked as read', 'ok');
+}
+
+async function updateNavBadge() {
+  const { count } = await sb.from('notifications').select('id', { count: 'exact', head: true })
+    .eq('user_id', me.id).eq('is_read', false);
+  const badge = document.getElementById('navNotifBadge');
+  document.getElementById('navNotifCount').textContent = count || 0;
+  badge.style.display = (count || 0) > 0 ? 'inline-flex' : 'none';
+}
+
+// ── Sessions ─────────────────────────────────────────────────
+async function loadSessions() {
+  const { data } = await sb.from('session_requests').select(`
+    id, booking_ref, student_name, status, preferred_date, session_type, fee_inr, concern,
+    psychologist_profiles(display_name, avatar_initials, grad_start, grad_end)
+  `).eq('student_contact', me.email).order('created_at', { ascending: false });
+  document.getElementById('sSessions').textContent = (data || []).length;
+  const el = document.getElementById('sessionsList');
+  if (!data || data.length === 0) { el.innerHTML = `<p style="color:var(--text-lt);font-size:.88rem;padding:10px 0">No session requests yet. <a href="index.html#psychologists" style="color:var(--sage)">Book your first session →</a></p>`; return; }
+  el.innerHTML = data.map(r => {
+    const p   = r.psychologist_profiles || {};
+    const bg  = `linear-gradient(135deg,${p.grad_start||'#4a7c59'},${p.grad_end||'#56CFB2'})`;
+    const chat = r.status === 'confirmed'
+      ? `<a href="chat.html" class="btn-sm">💬 Open Chat</a>` : '';
+    return `<div class="session-item">
+      <div class="session-avatar" style="background:${bg}">${p.avatar_initials||'DR'}</div>
+      <div class="session-info">
+        <div class="sn">${esc(p.display_name||'Psychologist')}</div>
+        <div class="ss">Ref: ${esc(r.booking_ref)} · ${fmtDate(r.preferred_date)}</div>
+      </div>
+      <div class="session-action">${chat}<span class="pill ${r.status}">${r.status}</span></div>
+    </div>`;
+  }).join('');
+}
+
+// ── Profile ──────────────────────────────────────────────────
+function fillProfileForm(p) {
+  document.getElementById('pn').value  = p.display_name || '';
+  document.getElementById('pc').value  = p.college || '';
+  document.getElementById('pst').value = p.stream || '';
+  document.getElementById('pyr').value = p.year_of_study || 1;
+}
+async function saveProfile() {
+  const upd = { display_name: document.getElementById('pn').value.trim(), college: document.getElementById('pc').value.trim(), stream: document.getElementById('pst').value, year_of_study: parseInt(document.getElementById('pyr').value) || 1, updated_at: new Date().toISOString() };
+  const { error } = await sb.from('student_profiles').update(upd).eq('user_id', me.id);
+  if (error) toast('Save failed: ' + error.message);
+  else { profile = { ...profile, ...upd }; document.getElementById('navName').textContent = upd.display_name; toast('Profile saved ✓', 'ok'); }
+}
+
+// ── UI Helpers ───────────────────────────────────────────────
+function sv(v, el) {
+  document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
+  document.getElementById('view-' + v).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
+  if (el) el.classList.add('active');
+  const map = { home:'Home', mood:'Mood Log', notifs:'Notifications', sessions:'My Sessions', tools:'Wellness Tools', profile:'Profile' };
+  document.getElementById('pageTitle').textContent = map[v] || v;
+  if (v === 'notifs') { loadNotifs(); updateNavBadge(); }
+  if (v === 'mood')   loadMoodHistory();
+  closeMobileNav();
+}
+function openMobileNav()  { document.getElementById('sidebar').classList.add('on'); document.getElementById('overlay').classList.add('on'); }
+function closeMobileNav() { document.getElementById('sidebar').classList.remove('on'); document.getElementById('overlay').classList.remove('on'); }
+async function doLogout() { await sb.auth.signOut(); go('student_auth.html'); }
+
+let _tt;
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = 'toast show ' + (type === 'ok' ? 'ok' : '');
+  clearTimeout(_tt); _tt = setTimeout(() => el.classList.remove('show'), 3000);
+}
+function fmtDate(d) { if (!d) return '—'; try { return new Date(d).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' }); } catch { return d; } }
+function esc(s) { return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
+function relTime(ts) {
+  const diff = (Date.now() - new Date(ts)) / 1000;
+  if (diff < 60)   return 'just now';
+  if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+  if (diff < 86400)return Math.floor(diff/3600) + 'h ago';
+  return Math.floor(diff/86400) + 'd ago';
+}
+</script>
+    <script src="../shared/crisis-support.js"></script>
+</body>
+</html>
+
+
+

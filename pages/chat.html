@@ -1,0 +1,493 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>YodhaMind — Chat</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💬</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@300;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root{
+      --ink:#1a1625; --bg:#f5f3ee; --white:#fff;
+      --sage:#3d7a57; --sage-lt:#e4f2eb; --sage-dk:#1e4a32;
+      --rose:#e05a6d; --border:#ddd9d0; --text:#3d3a4a; --text-lt:#7c7a8a;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;overflow:hidden}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column}
+
+    /* Guard */
+    #guard{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+    .gs{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--sage);border-radius:50%;animation:sp .7s linear infinite}
+    @keyframes sp{to{transform:rotate(360deg)}}
+
+    /* Top header */
+    .chat-header{
+      background:var(--ink);padding:0 20px;height:58px;
+      display:flex;align-items:center;gap:14px;flex-shrink:0;position:relative;z-index:10;
+    }
+    .back-btn{background:none;border:none;color:rgba(255,255,255,.6);cursor:pointer;font-size:1.2rem;transition:color .14s;padding:4px}
+    .back-btn:hover{color:#fff}
+    .chat-header-info{flex:1}
+    .chat-partner{font-weight:600;color:#fff;font-size:.95rem}
+    .chat-sub{font-size:.73rem;color:rgba(255,255,255,.45)}
+    .online-ind{display:flex;align-items:center;gap:6px;margin-left:auto}
+    .online-dot{width:8px;height:8px;border-radius:50%;background:#4ade80;animation:pulse 1.5s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    .online-lbl{font-size:.72rem;color:rgba(255,255,255,.5)}
+    .header-avatar{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;color:#fff;flex-shrink:0}
+
+    /* Layout */
+    .chat-layout{display:flex;flex:1;overflow:hidden}
+
+    /* Sidebar: room list */
+    .rooms-panel{
+      width:280px;background:#fff;border-right:1px solid var(--border);
+      display:flex;flex-direction:column;flex-shrink:0;
+    }
+    .rooms-hd{padding:16px 18px;border-bottom:1px solid var(--border)}
+    .rooms-hd h3{font-family:'Fraunces',serif;font-size:1rem;letter-spacing:-.02em;color:var(--ink)}
+    .rooms-hd p{font-size:.76rem;color:var(--text-lt);margin-top:3px}
+    .rooms-list{flex:1;overflow-y:auto}
+    .room-item{
+      display:flex;align-items:center;gap:12px;
+      padding:14px 18px;cursor:pointer;transition:background .13s;
+      border-bottom:1px solid #f0ede5;
+    }
+    .room-item:hover{background:#fafaf8}
+    .room-item.active{background:var(--sage-lt)}
+    .room-avatar{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;color:#fff;flex-shrink:0}
+    .room-info{flex:1;overflow:hidden}
+    .room-name{font-weight:600;font-size:.88rem;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .room-last{font-size:.75rem;color:var(--text-lt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+    .room-unread{background:var(--rose);color:#fff;font-size:.66rem;font-weight:700;padding:2px 7px;border-radius:20px;flex-shrink:0}
+    .no-rooms{text-align:center;padding:40px 20px;color:var(--text-lt);font-size:.86rem;line-height:1.6}
+    .no-rooms a{color:var(--sage);text-decoration:none;font-weight:600}
+
+    /* Chat area */
+    .chat-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
+    .chat-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text-lt);text-align:center;padding:40px}
+    .chat-empty .icon{font-size:3.5rem;margin-bottom:16px}
+    .chat-empty h3{font-family:'Fraunces',serif;font-size:1.3rem;color:var(--ink);margin-bottom:8px;letter-spacing:-.02em}
+    .chat-empty p{font-size:.88rem;line-height:1.6;max-width:300px}
+
+    /* Active room header */
+    .room-header{
+      background:#fff;border-bottom:1px solid var(--border);
+      padding:14px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0;
+    }
+    .rh-avatar{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.84rem;color:#fff;flex-shrink:0}
+    .rh-name{font-weight:600;font-size:.92rem;color:var(--ink)}
+    .rh-sub{font-size:.74rem;color:var(--text-lt)}
+    .rh-actions{margin-left:auto;display:flex;gap:8px}
+    .rh-btn{padding:6px 13px;border-radius:8px;border:1.5px solid var(--border);background:#fff;font-family:inherit;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .13s;color:var(--text)}
+    .rh-btn:hover{border-color:var(--ink);color:var(--ink)}
+
+    /* Messages */
+    .messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:10px}
+    .msg{display:flex;gap:10px;max-width:78%;animation:mpin .2s ease}
+    @keyframes mpin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+    .msg.me{flex-direction:row-reverse;align-self:flex-end}
+    .msg.them{align-self:flex-start}
+    .msg-avatar{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.76rem;color:#fff;flex-shrink:0;align-self:flex-end}
+    .msg-content{}
+    .msg-bubble{
+      padding:11px 15px;border-radius:16px;font-size:.9rem;line-height:1.55;
+      word-break:break-word;
+    }
+    .msg.me .msg-bubble{background:var(--ink);color:#fff;border-bottom-right-radius:4px}
+    .msg.them .msg-bubble{background:#fff;color:var(--text);border:1px solid var(--border);border-bottom-left-radius:4px}
+    .msg-time{font-size:.7rem;color:var(--text-lt);margin-top:4px;text-align:right}
+    .msg.them .msg-time{text-align:left}
+
+    /* Date separator */
+    .date-sep{text-align:center;font-size:.73rem;color:var(--text-lt);margin:8px 0;position:relative}
+    .date-sep::before,.date-sep::after{content:'';position:absolute;top:50%;width:38%;height:1px;background:var(--border)}
+    .date-sep::before{left:0}.date-sep::after{right:0}
+
+    /* Typing indicator */
+    .typing-indicator{display:none;align-items:center;gap:8px;padding:8px 20px;color:var(--text-lt);font-size:.78rem}
+    .typing-dots{display:flex;gap:3px}
+    .typing-dot{width:6px;height:6px;border-radius:50%;background:var(--text-lt);animation:td 1.2s ease infinite}
+    .typing-dot:nth-child(2){animation-delay:.2s}.typing-dot:nth-child(3){animation-delay:.4s}
+    @keyframes td{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(-4px);opacity:1}}
+
+    /* Input area */
+    .input-area{
+      background:#fff;border-top:1px solid var(--border);
+      padding:14px 16px;display:flex;align-items:flex-end;gap:10px;flex-shrink:0;
+    }
+    .msg-input{
+      flex:1;padding:11px 15px;border:1.5px solid var(--border);border-radius:12px;
+      font-family:inherit;font-size:.9rem;background:#fafaf8;color:var(--text);
+      outline:none;resize:none;max-height:120px;line-height:1.5;transition:border-color .14s;
+    }
+    .msg-input:focus{border-color:var(--sage);background:#fff}
+    .send-btn{
+      width:42px;height:42px;border-radius:12px;border:none;
+      background:var(--ink);color:#fff;font-size:1.1rem;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;flex-shrink:0;
+      transition:background .14s,transform .1s;
+    }
+    .send-btn:hover{background:#28233b;transform:scale(1.05)}
+    .send-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+    /* Mobile responsiveness */
+    @media(max-width:680px){
+      .rooms-panel{
+        position:fixed;left:0;top:58px;bottom:0;z-index:99;
+        transform:translateX(-100%);transition:transform .3s;
+        width:85%;box-shadow:4px 0 20px rgba(0,0,0,.15);
+      }
+      .rooms-panel.mobile-open{transform:translateX(0)}
+      .chat-area{width:100%}
+      .show-rooms-btn{display:flex!important}
+    }
+    .show-rooms-btn{display:none;background:none;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);padding:6px 11px;border-radius:8px;font-family:inherit;font-size:.78rem;cursor:pointer;align-items:center;gap:5px}
+    #roomsOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:98}
+    #roomsOverlay.on{display:block}
+  </style>
+</head>
+<body>
+
+<div id="guard"><div class="gs"></div><p style="color:#7c7a8a;font-size:.88rem">Loading chat…</p></div>
+
+<!-- Top header -->
+<div class="chat-header" id="chatHeader" style="display:none">
+  <button class="back-btn" id="backBtn" onclick="goBack()">←</button>
+  <button class="show-rooms-btn" id="showRoomsBtn" onclick="toggleRoomsMobile()">💬 Chats</button>
+  <div class="chat-header-info">
+    <div class="chat-partner">YodhaMind Chat</div>
+    <div class="chat-sub">Secure · Private · End-to-end encrypted</div>
+  </div>
+  <div class="online-ind">
+    <div class="online-dot"></div>
+    <div class="online-lbl">Connected</div>
+  </div>
+</div>
+
+<div id="roomsOverlay" onclick="closeRoomsMobile()"></div>
+
+<!-- Main layout -->
+<div class="chat-layout" id="chatLayout" style="display:none">
+
+  <!-- Rooms sidebar -->
+  <div class="rooms-panel" id="roomsPanel">
+    <div class="rooms-hd">
+      <h3>💬 My Conversations</h3>
+      <p>Sessions you have open chats for</p>
+    </div>
+    <div class="rooms-list" id="roomsList">
+      <div style="text-align:center;padding:30px;color:#7c7a8a;font-size:.85rem">Loading…</div>
+    </div>
+  </div>
+
+  <!-- Chat area -->
+  <div class="chat-area" id="chatArea">
+    <!-- Empty state -->
+    <div class="chat-empty" id="chatEmpty">
+      <div class="icon">💬</div>
+      <h3>No conversation selected</h3>
+      <p>Select a conversation from the left, or book a session with a psychologist to unlock chat.</p>
+      <a href="index.html#psychologists" style="margin-top:18px;display:inline-block;padding:10px 22px;background:var(--ink);color:#fff;border-radius:10px;text-decoration:none;font-weight:600;font-size:.88rem">Book a Session →</a>
+    </div>
+
+    <!-- Active chat -->
+    <div id="activeChatPane" style="display:none;flex:1;flex-direction:column;overflow:hidden;display:none">
+      <div class="room-header" id="roomHeader">
+        <div class="rh-avatar" id="rhAvatar" style="background:var(--sage)">DR</div>
+        <div><div class="rh-name" id="rhName">Psychologist</div><div class="rh-sub" id="rhSub">Confirmed session</div></div>
+        <div class="rh-actions">
+          <button class="rh-btn" onclick="window.location.href='index.html#psychologists'">📅 Book Again</button>
+        </div>
+      </div>
+      <div class="messages" id="messages"></div>
+      <div class="typing-indicator" id="typingIndicator">
+        <div class="typing-dots"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>
+        <span id="typingName">Someone</span> is typing…
+      </div>
+      <div class="input-area">
+        <textarea class="msg-input" id="msgInput" rows="1" placeholder="Type a message…" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" id="sendBtn" onclick="sendMsg()" title="Send">➤</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SB_URL = 'https://qbrdfnhksqoaagstvdzk.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFicmRmbmhrc3FvYWFnc3R2ZHprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3ODc5NDcsImV4cCI6MjA4ODM2Mzk0N30.GHhXkO63AMUrRSUHW9GtjD27AjBDZ1PIsfeBWRgNqgQ';
+const sb = window.supabase.createClient(SB_URL, SB_KEY);
+
+let me = null, myRole = null, myName = '';
+let rooms = [], activeRoom = null;
+let realtimeChannel = null;
+
+// ── Auth Guard ──────────────────────────────────────────────
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return go('student_auth.html');
+  me = session.user;
+  const { data: u } = await sb.from('users').select('role, name').eq('id', me.id).single();
+  if (!u) { await sb.auth.signOut(); return go('student_auth.html'); }
+  myRole = u.role;
+  myName = u.name || me.email?.split('@')[0] || 'User';
+
+  document.getElementById('guard').style.display = 'none';
+  document.getElementById('chatHeader').style.display = 'flex';
+  document.getElementById('chatLayout').style.display = 'flex';
+
+  await loadRooms();
+  sb.auth.onAuthStateChange(ev => { if (ev === 'SIGNED_OUT') go('student_auth.html'); });
+})();
+
+function go(u) { window.location.href = u; }
+function goBack() {
+  if (myRole === 'psychologist') window.location.href = 'psychologist.html';
+  else window.location.href = 'student_dashboard.html';
+}
+
+// ── Load rooms ───────────────────────────────────────────────
+async function loadRooms() {
+  const field = myRole === 'psychologist' ? 'psychologist_user_id' : 'student_user_id';
+  const { data, error } = await sb.from('chat_rooms').select(`
+    id, status, last_message_at,
+    student_user_id, psychologist_user_id,
+    student_profiles(display_name, avatar_color),
+    psychologist_profiles:psychologist_user_id(
+      psychologist_profiles(display_name, avatar_initials, grad_start, grad_end)
+    )
+  `).eq(field, me.id).eq('status', 'active').order('last_message_at', { ascending: false });
+
+  // Simpler fallback query if join fails
+  const { data: simpleRooms } = await sb.from('chat_rooms').select('*').eq(field, me.id).eq('status', 'active').order('last_message_at', { ascending: false });
+
+  rooms = simpleRooms || [];
+  await renderRooms();
+}
+
+async function renderRooms() {
+  const el = document.getElementById('roomsList');
+  if (rooms.length === 0) {
+    el.innerHTML = `<div class="no-rooms">
+      <div style="font-size:2.5rem;margin-bottom:12px">💬</div>
+      <p>No active chats yet.<br><a href="index.html#psychologists">Book a session</a> to unlock chat with a psychologist.</p>
+    </div>`;
+    return;
+  }
+
+  // For each room, fetch the other party's info
+  const items = await Promise.all(rooms.map(async (room) => {
+    const otherId = myRole === 'psychologist' ? room.student_user_id : room.psychologist_user_id;
+    let name = 'User', initls = 'U', bg = 'var(--sage)';
+    if (myRole === 'psychologist') {
+      const { data: sp } = await sb.from('student_profiles').select('display_name,avatar_color').eq('user_id', otherId).single();
+      if (sp) { name = sp.display_name; initls = name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(); bg = sp.avatar_color || 'var(--sage)'; }
+    } else {
+      const { data: pp } = await sb.from('psychologist_profiles').select('display_name,avatar_initials,grad_start,grad_end').eq('user_id', otherId).single();
+      if (pp) { name = pp.display_name; initls = pp.avatar_initials || 'DR'; bg = `linear-gradient(135deg,${pp.grad_start||'#3d7a57'},${pp.grad_end||'#56CFB2'})`; }
+    }
+
+    // Last message
+    const { data: lastMsg } = await sb.from('chat_messages').select('content,sent_at,sender_id').eq('room_id', room.id).order('sent_at', { ascending: false }).limit(1);
+    const last = lastMsg?.[0];
+
+    // Unread count
+    const { count } = await sb.from('chat_messages').select('id', { count: 'exact', head: true })
+      .eq('room_id', room.id).eq('is_read', false).neq('sender_id', me.id);
+
+    return { room, name, initls, bg, last, unread: count || 0 };
+  }));
+
+  el.innerHTML = items.map(({ room, name, initls, bg, last, unread }) => `
+    <div class="room-item ${activeRoom?.id === room.id ? 'active' : ''}" onclick="openRoom('${room.id}')">
+      <div class="room-avatar" style="background:${bg}">${initls}</div>
+      <div class="room-info">
+        <div class="room-name">${esc(name)}</div>
+        <div class="room-last">${last ? esc(last.content.slice(0, 45)) : 'No messages yet'}</div>
+      </div>
+      ${unread > 0 ? `<div class="room-unread">${unread}</div>` : ''}
+    </div>`).join('');
+}
+
+// ── Open a room ──────────────────────────────────────────────
+async function openRoom(roomId) {
+  activeRoom = rooms.find(r => r.id === roomId);
+  if (!activeRoom) return;
+
+  // Unsubscribe old channel
+  if (realtimeChannel) { await sb.removeChannel(realtimeChannel); realtimeChannel = null; }
+
+  // Get other party info
+  const otherId = myRole === 'psychologist' ? activeRoom.student_user_id : activeRoom.psychologist_user_id;
+  let name = 'User', initls = 'U', bg = 'var(--sage)';
+  if (myRole === 'psychologist') {
+    const { data: sp } = await sb.from('student_profiles').select('display_name,avatar_color').eq('user_id', otherId).single();
+    if (sp) { name = sp.display_name; initls = name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(); bg = sp.avatar_color||'var(--sage)'; }
+  } else {
+    const { data: pp } = await sb.from('psychologist_profiles').select('display_name,avatar_initials,grad_start,grad_end').eq('user_id', otherId).single();
+    if (pp) { name = pp.display_name; initls = pp.avatar_initials||'DR'; bg = `linear-gradient(135deg,${pp.grad_start||'#3d7a57'},${pp.grad_end||'#56CFB2'})`; }
+  }
+
+  // Update header
+  document.getElementById('rhAvatar').textContent = initls;
+  document.getElementById('rhAvatar').style.background = bg;
+  document.getElementById('rhName').textContent  = name;
+  document.getElementById('rhSub').textContent   = myRole === 'psychologist' ? 'Student' : 'Your Psychologist';
+  document.getElementById('typingName').textContent = name;
+
+  // Show chat pane
+  document.getElementById('chatEmpty').style.display = 'none';
+  const pane = document.getElementById('activeChatPane');
+  pane.style.display = 'flex';
+  pane.style.flexDirection = 'column';
+  pane.style.overflow = 'hidden';
+  pane.style.flex = '1';
+
+  // Update rooms list highlight
+  await renderRooms();
+
+  // Load messages
+  await loadMessages();
+
+  // Mark messages read
+  await sb.from('chat_messages').update({ is_read: true })
+    .eq('room_id', roomId).neq('sender_id', me.id).eq('is_read', false);
+
+  // Subscribe to realtime
+  realtimeChannel = sb.channel('room-' + roomId)
+    .on('postgres_changes', {
+      event: 'INSERT', schema: 'public', table: 'chat_messages',
+      filter: `room_id=eq.${roomId}`
+    }, async (payload) => {
+      appendMessage(payload.new, false);
+      if (payload.new.sender_id !== me.id) {
+        await sb.from('chat_messages').update({ is_read: true }).eq('id', payload.new.id);
+      }
+      scrollToBottom();
+    })
+    .subscribe();
+
+  closeRoomsMobile();
+}
+
+// ── Load messages ────────────────────────────────────────────
+async function loadMessages() {
+  const { data } = await sb.from('chat_messages').select('*')
+    .eq('room_id', activeRoom.id).order('sent_at').limit(100);
+  const el = document.getElementById('messages');
+  el.innerHTML = '';
+  let lastDate = '';
+  (data || []).forEach(msg => {
+    const d = msg.sent_at.slice(0, 10);
+    if (d !== lastDate) {
+      el.innerHTML += `<div class="date-sep">${formatDateSep(d)}</div>`;
+      lastDate = d;
+    }
+    appendMessage(msg, true);
+  });
+  scrollToBottom(false);
+}
+
+function appendMessage(msg, noAnim = false) {
+  const el   = document.getElementById('messages');
+  const isMe = msg.sender_id === me.id;
+  const time = new Date(msg.sent_at).toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
+  const initls = myName.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+
+  const div = document.createElement('div');
+  div.className = 'msg ' + (isMe ? 'me' : 'them');
+  if (noAnim) div.style.animation = 'none';
+  div.innerHTML = `
+    ${!isMe ? `<div class="msg-avatar" style="background:var(--sage)">${initls}</div>` : ''}
+    <div class="msg-content">
+      <div class="msg-bubble">${esc(msg.content)}</div>
+      <div class="msg-time">${time}</div>
+    </div>
+    ${isMe ? `<div class="msg-avatar" style="background:var(--ink)">${initls}</div>` : ''}
+  `;
+  el.appendChild(div);
+}
+
+// ── Send message ─────────────────────────────────────────────
+async function sendMsg() {
+  if (!activeRoom) return;
+  const inp = document.getElementById('msgInput');
+  const content = inp.value.trim();
+  if (!content) return;
+
+  const btn = document.getElementById('sendBtn');
+  btn.disabled = true;
+  inp.value = '';
+  autoResize(inp);
+
+  // Crisis detection
+  if (/(suicide|kill myself|die|end it all|give up on life)/i.test(content)) {
+    appendMessage({ 
+      sender_id: 'system', 
+      sent_at: new Date().toISOString(), 
+      content: "⚠️ SYSTEM NOTICE: The language in your message indicates you might be in extreme distress. Please, you are not alone. Please reach out to the iCall helpline immediately at 9152987821 or Vandrevala Foundation at 1860-2662-345. Help is available 24/7." 
+    }, false);
+    scrollToBottom();
+  }
+
+  const { error } = await sb.from('chat_messages').insert({
+    room_id: activeRoom.id,
+    sender_id: me.id,
+    sender_role: myRole,
+    content
+  });
+
+  if (error) {
+    inp.value = content; // restore on failure
+    console.error('Send failed:', error.message);
+  }
+  btn.disabled = false;
+  inp.focus();
+  scrollToBottom();
+  await renderRooms();
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function scrollToBottom(smooth = true) {
+  const el = document.getElementById('messages');
+  el.scrollTo({ top: el.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+}
+
+// ── Mobile ───────────────────────────────────────────────────
+function toggleRoomsMobile() {
+  document.getElementById('roomsPanel').classList.toggle('mobile-open');
+  document.getElementById('roomsOverlay').classList.toggle('on');
+}
+function closeRoomsMobile() {
+  document.getElementById('roomsPanel').classList.remove('mobile-open');
+  document.getElementById('roomsOverlay').classList.remove('on');
+}
+
+// ── Helpers ──────────────────────────────────────────────────
+function esc(s) { return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
+function formatDateSep(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  const today = new Date(); today.setHours(12,0,0,0);
+  const diff  = Math.round((today - d) / 86400000);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Yesterday';
+  return d.toLocaleDateString('en-IN', { day:'numeric', month:'long', year:'numeric' });
+}
+</script>
+    <script src="../shared/crisis-support.js"></script>
+</body>
+</html>
+
+
+

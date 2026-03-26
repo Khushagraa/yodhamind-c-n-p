@@ -1,0 +1,1087 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title>YodhaMind — Talk to a Counselor</title>
+    <meta name="description" content="Connect with verified psychologists and counselors. Book a confidential session today.">
+
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;800&display=swap" rel="stylesheet">
+
+    <script src="../shared/storage.js"></script>
+
+    <style>
+        :root {
+            --primary:      #7C5CBF;
+            --accent:       #56CFB2;
+            --warm:         #FFF8F0;
+            --text:         #2D2D2D;
+            --soft:         #F0EBF8;
+            --text-light:   #64748b;
+            --glass-border: rgba(255,255,255,0.5);
+            --shadow-soft:  0 20px 40px rgba(0,0,0,0.05);
+            --shadow-hover: 0 30px 60px rgba(124,92,191,0.15);
+            --radius-card:  24px;
+            --radius-btn:   50px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: linear-gradient(180deg, var(--soft) 0%, var(--warm) 40%, #ffffff 100%);
+            color: var(--text); overflow-x: hidden;
+            min-height: 100dvh; padding-bottom: 80px;
+        }
+
+        /* ═══ NAV ═══ */
+        nav#navbar {
+            position: fixed; top: 0; width: 100%;
+            background: rgba(255,255,255,0.92); backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            z-index: 1000; padding: 14px 0; transition: all 0.3s;
+        }
+        nav#navbar.scrolled { padding: 10px 0; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .nav-container {
+            max-width: 1200px; margin: 0 auto;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 24px;
+        }
+        .logo {
+            font-size: 1.5rem; font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+        .nav-right { display: flex; align-items: center; gap: 12px; }
+        .nav-links { display: flex; gap: 20px; align-items: center; }
+        .nav-links a {
+            text-decoration: none; color: var(--text);
+            font-weight: 600; font-size: 0.9rem; transition: color 0.2s;
+        }
+        .nav-links a:hover, .nav-links a.active { color: var(--primary); }
+        .btn-cta {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white; padding: 9px 22px; border-radius: var(--radius-btn);
+            font-weight: 700; font-size: 0.88rem;
+            border: none; cursor: pointer; font-family: inherit;
+            box-shadow: 0 8px 20px rgba(124,92,191,0.2);
+            transition: transform 0.2s; text-decoration: none; display: inline-block;
+        }
+        .btn-cta:hover { transform: translateY(-2px); color: white; }
+        @media (max-width: 768px) { .nav-links { display: none; } }
+
+        /* ═══ PAGE ═══ */
+        .page { max-width: 960px; margin: 0 auto; padding: 94px 20px 40px; }
+
+        /* ═══ TABS ═══ */
+        .tab-bar {
+            display: flex; gap: 4px; background: white;
+            border-radius: var(--radius-btn); padding: 4px;
+            box-shadow: var(--shadow-soft); margin-bottom: 24px;
+            border: 1px solid rgba(0,0,0,0.04); width: fit-content;
+        }
+        .tab-btn {
+            padding: 9px 22px; border-radius: 40px;
+            border: none; cursor: pointer; font-family: inherit;
+            font-weight: 700; font-size: 0.88rem; color: var(--text-light);
+            background: none; transition: all 0.2s; position: relative;
+        }
+        .tab-btn.active { background: var(--primary); color: white; }
+        .tab-btn .badge {
+            position: absolute; top: 4px; right: 6px;
+            background: #EF4444; color: white;
+            width: 16px; height: 16px; border-radius: 50%;
+            font-size: 0.6rem; font-weight: 800;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* ═══ PAGE HEADER ═══ */
+        .page-header { margin-bottom: 24px; }
+        .page-header h1 { font-size: 1.8rem; font-weight: 800; line-height: 1.2; margin-bottom: 6px; }
+        .page-header p  { font-size: 0.9rem; color: var(--text-light); font-weight: 500; }
+
+        /* Trust badges */
+        .trust-row {
+            display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px;
+        }
+        .trust-badge {
+            display: flex; align-items: center; gap: 5px;
+            background: white; border: 1px solid rgba(0,0,0,0.06);
+            padding: 5px 12px; border-radius: var(--radius-btn);
+            font-size: 0.75rem; font-weight: 700; color: var(--text-light);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        /* ═══ FILTER ROW ═══ */
+        .filter-section { margin-bottom: 20px; }
+        .filter-scroll {
+            display: flex; gap: 8px; overflow-x: auto;
+            padding-bottom: 4px; scrollbar-width: none;
+        }
+        .filter-scroll::-webkit-scrollbar { display: none; }
+        .filter-chip {
+            flex-shrink: 0; padding: 7px 16px; border-radius: var(--radius-btn);
+            border: 1.5px solid rgba(0,0,0,0.08); background: white;
+            font-family: inherit; font-size: 0.8rem; font-weight: 700;
+            color: var(--text-light); cursor: pointer; transition: all 0.18s;
+            white-space: nowrap;
+        }
+        .filter-chip:hover, .filter-chip.active {
+            background: var(--primary); color: white; border-color: var(--primary);
+        }
+
+        /* ═══ PSYCHOLOGIST GRID ═══ */
+        .psych-grid {
+            display: grid; gap: 16px;
+            grid-template-columns: repeat(auto-fill, minmax(280px,1fr));
+        }
+
+        .psych-card {
+            background: white; border-radius: 22px;
+            border: 1.5px solid rgba(0,0,0,0.04);
+            box-shadow: var(--shadow-soft); padding: 22px;
+            cursor: pointer; transition: all 0.25s;
+            display: flex; flex-direction: column; gap: 14px;
+        }
+        .psych-card:hover {
+            transform: translateY(-5px); box-shadow: var(--shadow-hover);
+            border-color: rgba(124,92,191,0.2);
+        }
+
+        /* Avatar */
+        .psych-top { display: flex; gap: 14px; align-items: flex-start; }
+        .psych-avatar {
+            width: 56px; height: 56px; border-radius: 18px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.6rem; font-weight: 800; color: white;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+        }
+        .psych-info { flex: 1; min-width: 0; }
+        .psych-name { font-size: 1rem; font-weight: 800; color: var(--text); margin-bottom: 2px; }
+        .psych-spec { font-size: 0.78rem; color: var(--primary); font-weight: 700; margin-bottom: 4px; }
+        .psych-rating {
+            display: flex; align-items: center; gap: 4px;
+            font-size: 0.76rem; font-weight: 700; color: var(--text-light);
+        }
+
+        /* Tags */
+        .psych-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+        .psych-tag {
+            font-size: 0.68rem; font-weight: 700; padding: 3px 9px;
+            border-radius: 20px; background: var(--soft); color: var(--primary);
+        }
+
+        /* Footer row */
+        .psych-footer {
+            display: flex; justify-content: space-between;
+            align-items: center; margin-top: auto;
+            padding-top: 14px; border-top: 1px solid rgba(0,0,0,0.05);
+        }
+        .psych-fee { font-size: 0.9rem; font-weight: 800; color: var(--text); }
+        .psych-fee span { font-size: 0.72rem; color: var(--text-light); font-weight: 500; }
+        .psych-avail {
+            font-size: 0.72rem; font-weight: 700;
+            display: flex; align-items: center; gap: 4px;
+        }
+        .avail-dot { width: 7px; height: 7px; border-radius: 50%; }
+
+        .btn-book-quick {
+            padding: 9px 18px; border-radius: var(--radius-btn);
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white; border: none; cursor: pointer;
+            font-family: inherit; font-weight: 800; font-size: 0.8rem;
+            box-shadow: 0 6px 16px rgba(124,92,191,0.25); transition: all 0.2s;
+        }
+        .btn-book-quick:hover { transform: translateY(-2px); opacity: 0.92; }
+
+        /* ═══ PROFILE MODAL ═══ */
+        .modal-overlay {
+            position: fixed; inset: 0; z-index: 2000;
+            background: rgba(20,10,40,0.5); backdrop-filter: blur(6px);
+            display: flex; align-items: flex-end; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.25s;
+        }
+        .modal-overlay.open { opacity: 1; pointer-events: all; }
+        .modal-sheet {
+            width: 100%; max-width: 680px; background: white;
+            border-radius: 32px 32px 0 0;
+            padding: 0 0 32px;
+            transform: translateY(100%);
+            transition: transform 0.35s cubic-bezier(0.32,1.15,0.64,1);
+            max-height: 92dvh; overflow-y: auto;
+        }
+        .modal-overlay.open .modal-sheet { transform: translateY(0); }
+
+        /* Modal sticky header */
+        .modal-sticky {
+            position: sticky; top: 0; background: white; z-index: 10;
+            padding: 16px 24px 0; border-radius: 32px 32px 0 0;
+        }
+        .modal-handle {
+            width: 40px; height: 4px;
+            background: rgba(0,0,0,0.1); border-radius: 2px;
+            margin: 0 auto 16px;
+        }
+        .modal-body { padding: 0 24px; }
+
+        /* Profile header in modal */
+        .modal-psych-header {
+            display: flex; gap: 18px; align-items: center; margin-bottom: 20px;
+        }
+        .modal-avatar {
+            width: 72px; height: 72px; border-radius: 22px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2rem; font-weight: 800; color: white;
+        }
+        .modal-psych-name { font-size: 1.2rem; font-weight: 800; margin-bottom: 3px; }
+        .modal-psych-spec { font-size: 0.83rem; color: var(--primary); font-weight: 700; }
+        .modal-psych-creds {
+            font-size: 0.78rem; color: var(--text-light); font-weight: 600; margin-top: 4px;
+        }
+
+        .info-section-title {
+            font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.08em; color: var(--text-light); margin-bottom: 10px;
+        }
+        .modal-bio {
+            font-size: 0.88rem; color: var(--text); line-height: 1.7;
+            font-weight: 500; margin-bottom: 20px;
+        }
+
+        /* Stats row inside modal */
+        .modal-stats {
+            display: grid; grid-template-columns: repeat(3,1fr);
+            gap: 10px; margin-bottom: 20px;
+        }
+        .modal-stat {
+            background: var(--soft); border-radius: 14px; padding: 12px;
+            text-align: center;
+        }
+        .modal-stat-val { font-size: 1.2rem; font-weight: 800; color: var(--primary); }
+        .modal-stat-lbl { font-size: 0.65rem; font-weight: 700; color: var(--text-light);
+            text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+
+        /* Availability slots */
+        .slots-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+        .slot-pill {
+            padding: 6px 14px; border-radius: var(--radius-btn);
+            font-size: 0.78rem; font-weight: 700;
+            background: rgba(86,207,178,0.12); color: #059669;
+            border: 1px solid rgba(86,207,178,0.3);
+        }
+
+        /* Session type tabs inside modal */
+        .session-types {
+            display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;
+        }
+        .session-type-btn {
+            display: flex; align-items: center; gap: 6px;
+            padding: 8px 14px; border-radius: 12px;
+            border: 1.5px solid rgba(0,0,0,0.08); background: var(--soft);
+            font-family: inherit; font-size: 0.8rem; font-weight: 700;
+            color: var(--text); cursor: pointer; transition: all 0.18s;
+        }
+        .session-type-btn.sel {
+            border-color: var(--primary); background: white;
+            box-shadow: 0 4px 12px rgba(124,92,191,0.14);
+        }
+
+        .divider {
+            height: 1px; background: rgba(0,0,0,0.06);
+            margin: 20px 0;
+        }
+
+        /* Book button inside modal */
+        .btn-book-main {
+            width: 100%; padding: 15px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white; border: none; border-radius: 18px;
+            font-family: inherit; font-weight: 800; font-size: 1rem;
+            cursor: pointer; box-shadow: 0 10px 24px rgba(124,92,191,0.28);
+            transition: opacity 0.2s, transform 0.2s;
+        }
+        .btn-book-main:hover { opacity: 0.92; transform: translateY(-2px); }
+
+        /* ═══ BOOKING FORM MODAL ═══ */
+        .form-label {
+            font-size: 0.78rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.06em; color: var(--text-light);
+            display: block; margin-bottom: 8px;
+        }
+        .form-input {
+            width: 100%; padding: 13px 16px;
+            border: 1.5px solid rgba(0,0,0,0.09); border-radius: 14px;
+            font-family: inherit; font-size: 0.9rem; color: var(--text);
+            background: white; outline: none; display: block;
+            margin-bottom: 14px; transition: border-color 0.2s;
+        }
+        .form-input:focus { border-color: var(--primary); background: #FEFEFE; }
+        textarea.form-input { resize: none; min-height: 100px; line-height: 1.6; }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        @media (max-width: 480px) { .form-row { grid-template-columns: 1fr; } }
+
+        /* Date slots */
+        .date-slots { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 14px; scrollbar-width: none; }
+        .date-slots::-webkit-scrollbar { display: none; }
+        .date-slot {
+            flex-shrink: 0; padding: 10px 14px; border-radius: 14px;
+            border: 1.5px solid rgba(0,0,0,0.08); background: var(--soft);
+            cursor: pointer; text-align: center; min-width: 72px;
+            transition: all 0.18s; font-family: inherit;
+        }
+        .date-slot.sel { border-color: var(--primary); background: white;
+            box-shadow: 0 4px 12px rgba(124,92,191,0.15); }
+        .date-slot-day  { font-size: 0.68rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; }
+        .date-slot-date { font-size: 1rem; font-weight: 800; color: var(--text); }
+
+        /* Time slots */
+        .time-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+        .time-slot {
+            padding: 8px 14px; border-radius: 10px;
+            border: 1.5px solid rgba(0,0,0,0.08); background: var(--soft);
+            cursor: pointer; font-family: inherit; font-size: 0.8rem; font-weight: 700;
+            color: var(--text); transition: all 0.15s;
+        }
+        .time-slot.sel { border-color: var(--primary); background: white;
+            box-shadow: 0 3px 10px rgba(124,92,191,0.14); color: var(--primary); }
+        .time-slot.taken { opacity: 0.38; pointer-events: none; }
+
+        .btn-submit-booking {
+            width: 100%; padding: 15px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white; border: none; border-radius: 18px;
+            font-family: inherit; font-weight: 800; font-size: 1rem;
+            cursor: pointer; box-shadow: 0 10px 24px rgba(124,92,191,0.28);
+            transition: opacity 0.2s, transform 0.2s; margin-top: 6px;
+        }
+        .btn-submit-booking:hover { opacity: 0.92; transform: translateY(-2px); }
+
+        /* ═══ MY BOOKINGS VIEW ═══ */
+        .booking-card {
+            background: white; border-radius: 20px;
+            border: 1.5px solid rgba(0,0,0,0.04);
+            box-shadow: var(--shadow-soft); padding: 20px 22px;
+            margin-bottom: 12px; display: flex; gap: 14px; align-items: flex-start;
+            transition: all 0.22s;
+        }
+        .booking-card:hover { border-color: rgba(124,92,191,0.2); }
+
+        .booking-status-dot {
+            width: 10px; height: 10px; border-radius: 50%;
+            flex-shrink: 0; margin-top: 5px;
+        }
+        .booking-doc-name { font-size: 0.95rem; font-weight: 800; margin-bottom: 3px; }
+        .booking-detail   { font-size: 0.82rem; color: var(--text-light); font-weight: 600; margin-bottom: 5px; }
+        .booking-concern  {
+            font-size: 0.8rem; color: var(--text); line-height: 1.5;
+            background: var(--soft); padding: 6px 10px; border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        .booking-badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 3px 10px; border-radius: 20px;
+            font-size: 0.72rem; font-weight: 800;
+        }
+        .badge-pending   { background: rgba(245,158,11,0.12); color: #D97706; }
+        .badge-confirmed { background: rgba(5,150,105,0.1);   color: #059669; }
+        .badge-completed { background: rgba(124,92,191,0.1);  color: var(--primary); }
+        .badge-cancelled { background: rgba(100,116,139,0.1); color: var(--text-light); }
+
+        .btn-cancel-booking {
+            margin-top: 10px; padding: 7px 16px; border-radius: var(--radius-btn);
+            border: 1.5px solid rgba(220,38,38,0.2); background: white;
+            color: #DC2626; font-family: inherit; font-weight: 700; font-size: 0.78rem;
+            cursor: pointer; transition: all 0.18s;
+        }
+        .btn-cancel-booking:hover { background: #FEF2F2; }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center; padding: 60px 20px;
+        }
+        .empty-icon  { font-size: 3rem; margin-bottom: 12px; }
+        .empty-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 8px; }
+        .empty-text  { font-size: 0.87rem; color: var(--text-light); line-height: 1.7;
+            max-width: 360px; margin: 0 auto; }
+
+        /* ═══ SUCCESS CARD ═══ */
+        .success-card {
+            background: linear-gradient(135deg, #F0FFF4, #E6FFFA);
+            border: 1.5px solid rgba(86,207,178,0.35);
+            border-radius: var(--radius-card); padding: 28px; text-align: center;
+            display: none; margin-bottom: 20px;
+        }
+        .success-card.show { display: block; }
+        .success-icon  { font-size: 2.8rem; margin-bottom: 10px; }
+        .success-title { font-size: 1.1rem; font-weight: 800; color: #065F46; margin-bottom: 6px; }
+        .success-text  { font-size: 0.84rem; color: #047857; line-height: 1.6; }
+
+        /* ═══ CRISIS STRIP ═══ */
+        .crisis-strip {
+            background: white; border-top: 1px solid rgba(0,0,0,0.05);
+            padding: 14px 20px; text-align: center;
+            font-size: 0.78rem; color: var(--text-light); font-weight: 500;
+        }
+        .crisis-strip a { color: var(--primary); font-weight: 700; text-decoration: none; }
+        .crisis-strip a:hover { text-decoration: underline; }
+
+        /* ═══ MOBILE NAV ═══ */
+        .mobile-nav {
+            display: none; position: fixed; bottom: 0; left: 0; width: 100%;
+            background: rgba(255,255,255,0.98); backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(0,0,0,0.05);
+            justify-content: space-around;
+            padding: 10px 0 max(10px, env(safe-area-inset-bottom));
+            z-index: 1000;
+        }
+        .mobile-nav a {
+            text-decoration: none; color: var(--text-light);
+            display: flex; flex-direction: column;
+            align-items: center; gap: 3px;
+            font-size: 0.68rem; font-weight: 700; min-width: 50px;
+        }
+        .mobile-nav a.active { color: var(--primary); }
+        .mobile-nav a span  { font-size: 1.25rem; line-height: 1; }
+        @media (max-width: 768px) { .mobile-nav { display: flex; } }
+
+        /* ═══ TOAST ═══ */
+        .toast {
+            position: fixed; bottom: 76px; left: 50%;
+            transform: translateX(-50%) translateY(10px);
+            background: var(--text); color: white;
+            padding: 10px 22px; border-radius: var(--radius-btn);
+            font-size: 0.85rem; font-weight: 700;
+            z-index: 5000; opacity: 0; pointer-events: none;
+            transition: opacity 0.25s, transform 0.25s; white-space: nowrap;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .psych-card { animation: fadeSlideUp 0.35s ease both; }
+
+    </style>
+</head>
+<body>
+
+    <!-- ═══ NAV ═══ -->
+    <nav id="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">✨ YodhaMind</a>
+            <div class="nav-right">
+                <div class="nav-links">
+                    <a href="dashboard.html">Dashboard</a>
+                    <a href="games.html">Mind Gym</a>
+                    <a href="assessment.html">Assess</a>
+                    <a href="connect.html" class="active">Support</a>
+                </div>
+                <a href="dashboard.html" class="btn-cta">← Home</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ═══ MAIN ═══ -->
+    <main class="page" style="position: relative;">
+        <!-- Coming Soon Overlay -->
+        <div style="position: absolute; inset: 0; background: rgba(255,255,255,0.7); backdrop-filter: blur(4px); z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 20px;">
+            <div style="background: white; padding: 40px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); text-align: center; border: 1px solid var(--soft);">
+                <div style="font-size: 4rem; margin-bottom: 20px;">🚀</div>
+                <h2 style="font-size: 2rem; font-weight: 800; margin-bottom: 10px; background: linear-gradient(135deg, var(--primary), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Coming Soon</h2>
+                <p style="color: var(--text-light); max-width: 300px; line-height: 1.6;">Our verified counselor network is being finalized. Stay tuned for expert mental health support!</p>
+                <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: center;">
+                    <a href="/" class="btn-cta">Return Home</a>
+                    <a href="/games" class="btn-cta" style="background: var(--soft); color: var(--primary);">Explore Games</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Page header -->
+        <div class="page-header">
+            <h1>Talk to a Counselor 💬</h1>
+            <p>Verified psychologists who understand the pressure of college life.</p>
+            <div class="trust-row">
+                <div class="trust-badge">🔒 100% Confidential</div>
+                <div class="trust-badge">✅ Verified Credentials</div>
+                <div class="trust-badge">🎓 Student-Focused</div>
+                <div class="trust-badge">💰 Affordable Fees</div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tab-bar">
+            <button class="tab-btn active" id="tabBrowse" onclick="showTab('browse')">Browse Counselors</button>
+            <button class="tab-btn" id="tabMine" onclick="showTab('mine')">
+                My Bookings
+                <span class="badge" id="pendingBadge" style="display:none;">0</span>
+            </button>
+        </div>
+
+        <!-- ─── BROWSE TAB ─── -->
+        <div id="tabContentBrowse">
+
+            <!-- Success card (shown after booking) -->
+            <div class="success-card" id="successCard">
+                <div class="success-icon">🎉</div>
+                <div class="success-title">Session Requested!</div>
+                <div class="success-text" id="successText"></div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filter-section">
+                <div class="filter-scroll" id="filterRow">
+                    <button class="filter-chip active" onclick="setFilter(this,'')" data-spec="">All</button>
+                    <button class="filter-chip" onclick="setFilter(this,'anxiety')" data-spec="anxiety">😟 Anxiety</button>
+                    <button class="filter-chip" onclick="setFilter(this,'stress')" data-spec="stress">😤 Stress</button>
+                    <button class="filter-chip" onclick="setFilter(this,'burnout')" data-spec="burnout">😩 Burnout</button>
+                    <button class="filter-chip" onclick="setFilter(this,'depression')" data-spec="depression">💙 Depression</button>
+                    <button class="filter-chip" onclick="setFilter(this,'relationships')" data-spec="relationships">💞 Relationships</button>
+                    <button class="filter-chip" onclick="setFilter(this,'career')" data-spec="career">🎯 Career</button>
+                </div>
+            </div>
+
+            <!-- Grid -->
+            <div class="psych-grid" id="psychGrid"></div>
+
+        </div>
+
+        <!-- ─── MY BOOKINGS TAB ─── -->
+        <div id="tabContentMine" style="display:none;">
+            <div id="myBookingsList"></div>
+        </div>
+
+    </main>
+
+    <!-- CRISIS STRIP -->
+    <div class="crisis-strip">
+        Need help right now? &nbsp;
+        <a href="tel:9152987821">iCall: 9152987821</a> &nbsp;·&nbsp;
+        <a href="tel:18602662345">Vandrevala: 1860-2662-345</a> &nbsp;·&nbsp;
+        <a href="tel:104">iCall (Toll-free): 104</a>
+    </div>
+
+    <!-- MOBILE NAV -->
+    <nav class="mobile-nav">
+        <a href="dashboard.html"><span>🏠</span>Home</a>
+        <a href="games.html"><span>🎮</span>Games</a>
+        <a href="assessment.html"><span>📋</span>Assess</a>
+        <a href="connect.html" class="active"><span>💬</span>Support</a>
+        <a href="journal.html"><span>📝</span>Journal</a>
+    </nav>
+
+    <!-- ═══ PROFILE MODAL ═══ -->
+    <div class="modal-overlay" id="profileModal" onclick="closeProfileOnBg(event)">
+        <div class="modal-sheet" id="profileSheet">
+            <div class="modal-sticky">
+                <div class="modal-handle"></div>
+            </div>
+            <div class="modal-body" id="profileBody"></div>
+        </div>
+    </div>
+
+    <!-- ═══ BOOKING FORM MODAL ═══ -->
+    <div class="modal-overlay" id="bookingModal" onclick="closeBookingOnBg(event)">
+        <div class="modal-sheet">
+            <div class="modal-sticky">
+                <div class="modal-handle"></div>
+                <h2 style="font-size:1.1rem;font-weight:800;padding:0 0 16px;" id="bookingModalTitle">Book a Session</h2>
+            </div>
+            <div class="modal-body">
+
+                <!-- Date picker -->
+                <label class="form-label">Select Date</label>
+                <div class="date-slots" id="dateSlots"></div>
+
+                <!-- Time picker -->
+                <label class="form-label">Select Time</label>
+                <div class="time-grid" id="timeGrid"></div>
+
+                <!-- Session type -->
+                <label class="form-label">Session Type</label>
+                <div class="session-types" id="sessionTypes">
+                    <button class="session-type-btn sel" onclick="pickSessionType(this,'chat')">💬 Chat</button>
+                    <button class="session-type-btn" onclick="pickSessionType(this,'video')">📹 Video</button>
+                    <button class="session-type-btn" onclick="pickSessionType(this,'phone')">📞 Phone</button>
+                </div>
+
+                <!-- Name + contact (auto-filled if user profile exists) -->
+                <div class="form-row">
+                    <div>
+                        <label class="form-label">Your Name</label>
+                        <input class="form-input" id="bookingName" type="text" placeholder="Full name" style="margin-bottom:0;"/>
+                    </div>
+                    <div>
+                        <label class="form-label">Email / Phone</label>
+                        <input class="form-input" id="bookingContact" type="text" placeholder="contact@email.com" style="margin-bottom:0;"/>
+                    </div>
+                </div>
+                <div style="margin-bottom:14px;"></div>
+
+                <!-- Concern -->
+                <label class="form-label">What's on your mind? (optional)</label>
+                <textarea class="form-input" id="bookingConcern"
+                    placeholder="Briefly describe what you'd like to talk about. This helps the counselor prepare."></textarea>
+
+                <button class="btn-submit-booking" onclick="submitBooking()">
+                    Confirm Booking →
+                </button>
+
+                <p style="font-size:0.74rem;color:var(--text-light);text-align:center;margin-top:12px;font-weight:600;">
+                    🔒 Your information is strictly confidential
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast"></div>
+
+
+    <!-- ══════════════════════════════════════
+         JAVASCRIPT
+    ══════════════════════════════════════ -->
+    <script>
+    'use strict';
+
+    /* ──────────────────────────────────────────
+       PSYCHOLOGIST DATA
+       Dynamically loaded from Supabase.
+       Fallback empty state.
+    ────────────────────────────────────────── */
+    const PSYCHOLOGISTS = [];
+
+    /* ──────────────────────────────────────────
+       STATE
+    ────────────────────────────────────────── */
+    let activeFilter    = '';
+    let bookingTarget   = null;   // psychologist object being booked
+    let selectedDate    = null;
+    let selectedTime    = null;
+    let selectedSession = 'chat';
+
+    /* ──────────────────────────────────────────
+       NAV SHADOW
+    ────────────────────────────────────────── */
+    window.addEventListener('scroll', () => {
+        document.getElementById('navbar')
+            .classList.toggle('scrolled', window.scrollY > 10);
+    }, { passive: true });
+
+    /* ──────────────────────────────────────────
+       TABS
+    ────────────────────────────────────────── */
+    function showTab(tab) {
+        document.getElementById('tabContentBrowse').style.display = tab === 'browse' ? '' : 'none';
+        document.getElementById('tabContentMine').style.display   = tab === 'mine'   ? '' : 'none';
+        document.getElementById('tabBrowse').classList.toggle('active', tab === 'browse');
+        document.getElementById('tabMine').classList.toggle('active',   tab === 'mine');
+        if (tab === 'mine') renderMyBookings();
+    }
+
+    /* ──────────────────────────────────────────
+       FILTER
+    ────────────────────────────────────────── */
+    function setFilter(btn, spec) {
+        document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        activeFilter = spec;
+        renderGrid();
+    }
+
+    /* ──────────────────────────────────────────
+       RENDER PSYCHOLOGIST GRID
+    ────────────────────────────────────────── */
+    function renderGrid() {
+        const grid = document.getElementById('psychGrid');
+        const list = activeFilter
+            ? PSYCHOLOGISTS.filter(p => p.tags.includes(activeFilter))
+            : PSYCHOLOGISTS;
+
+        if (!list.length) {
+            grid.innerHTML = `
+                <div style="grid-column:1/-1;text-align:center;padding:40px 20px;color:var(--text-light);">
+                    <div style="font-size:2rem;margin-bottom:10px;">🔍</div>
+                    <p style="font-weight:600;">No counselors match this filter.</p>
+                </div>`;
+            return;
+        }
+
+        grid.innerHTML = list.map((p, i) => {
+            const stars = '⭐'.repeat(Math.round(p.rating));
+            const availColor = p.available ? '#059669' : '#94A3B8';
+            const availText  = p.available ? 'Available' : 'Busy';
+            const tagsHtml   = p.tags.slice(0,3).map(t => `<span class="psych-tag">${t}</span>`).join('');
+
+            return `
+                <div class="psych-card" onclick="openProfile('${p.id}')"
+                     style="animation-delay:${i * 0.05}s">
+                    <div class="psych-top">
+                        <div class="psych-avatar"
+                             style="background:linear-gradient(135deg,${p.gradStart},${p.gradEnd});">
+                            ${p.initials}
+                        </div>
+                        <div class="psych-info">
+                            <div class="psych-name">${p.name}</div>
+                            <div class="psych-spec">${p.spec}</div>
+                            <div class="psych-rating">
+                                ⭐ ${p.rating} &nbsp;·&nbsp; ${p.sessions} sessions
+                            </div>
+                        </div>
+                    </div>
+                    <div class="psych-tags">${tagsHtml}</div>
+                    <div class="psych-footer">
+                        <div>
+                            <div class="psych-fee">₹${p.fee} <span>/ session</span></div>
+                            <div class="psych-avail" style="color:${availColor}; margin-top:4px;">
+                                <div class="avail-dot" style="background:${availColor};"></div>
+                                ${availText} · ${p.nextSlot}
+                            </div>
+                        </div>
+                        <button class="btn-book-quick"
+                            onclick="event.stopPropagation(); openBookingModal('${p.id}')">
+                            Book →
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    /* ──────────────────────────────────────────
+       PROFILE MODAL
+    ────────────────────────────────────────── */
+    function openProfile(id) {
+        const p = PSYCHOLOGISTS.find(x => x.id === id);
+        if (!p) return;
+
+        const slotsHtml = p.slots.map(s =>
+            `<span class="slot-pill">📅 ${s}</span>`
+        ).join('');
+
+        const tagsHtml = p.tags.map(t =>
+            `<span class="psych-tag">${t}</span>`
+        ).join('');
+
+        document.getElementById('profileBody').innerHTML = `
+            <div class="modal-psych-header">
+                <div class="modal-avatar"
+                     style="background:linear-gradient(135deg,${p.gradStart},${p.gradEnd});">
+                    ${p.initials}
+                </div>
+                <div>
+                    <div class="modal-psych-name">${p.name}</div>
+                    <div class="modal-psych-spec">${p.spec}</div>
+                    <div class="modal-psych-creds">🎓 ${p.creds}</div>
+                </div>
+            </div>
+
+            <div class="modal-stats">
+                <div class="modal-stat">
+                    <div class="modal-stat-val">⭐ ${p.rating}</div>
+                    <div class="modal-stat-lbl">Rating</div>
+                </div>
+                <div class="modal-stat">
+                    <div class="modal-stat-val">${p.sessions}+</div>
+                    <div class="modal-stat-lbl">Sessions</div>
+                </div>
+                <div class="modal-stat">
+                    <div class="modal-stat-val">₹${p.fee}</div>
+                    <div class="modal-stat-lbl">Per Session</div>
+                </div>
+            </div>
+
+            <div class="info-section-title">About</div>
+            <p class="modal-bio">${p.bio}</p>
+
+            <div class="info-section-title">Specialisations</div>
+            <div class="psych-tags" style="margin-bottom:20px;">${tagsHtml}</div>
+
+            <div class="info-section-title">Available Slots This Week</div>
+            <div class="slots-grid" style="margin-bottom:20px;">${slotsHtml}</div>
+
+            <div class="divider"></div>
+
+            <button class="btn-book-main"
+                onclick="closeProfile(); openBookingModal('${p.id}')">
+                Book a Session with ${p.name.split(' ')[1] || p.name} →
+            </button>
+
+            <p style="font-size:0.74rem;color:var(--text-light);text-align:center;margin-top:12px;font-weight:600;">
+                🔒 Fully confidential · No judgment · Student-safe space
+            </p>
+        `;
+
+        document.getElementById('profileModal').classList.add('open');
+    }
+
+    function closeProfile() {
+        document.getElementById('profileModal').classList.remove('open');
+    }
+
+    function closeProfileOnBg(e) {
+        if (e.target === e.currentTarget) closeProfile();
+    }
+
+    /* ──────────────────────────────────────────
+       BOOKING MODAL
+    ────────────────────────────────────────── */
+    function openBookingModal(id) {
+        bookingTarget   = PSYCHOLOGISTS.find(p => p.id === id);
+        if (!bookingTarget) return;
+
+        selectedDate    = null;
+        selectedTime    = null;
+        selectedSession = 'chat';
+
+        // Reset session type UI
+        document.querySelectorAll('.session-type-btn').forEach(b => {
+            b.classList.toggle('sel', b.textContent.includes('Chat'));
+        });
+
+        // Auto-fill name from YM profile
+        const user = YM.getUser();
+        document.getElementById('bookingName').value    = user ? (user.name || '') : '';
+        document.getElementById('bookingContact').value = user ? (user.email || '') : '';
+        document.getElementById('bookingConcern').value = '';
+
+        document.getElementById('bookingModalTitle').textContent =
+            `Book with ${bookingTarget.name}`;
+
+        // Build 7 date slots starting from tomorrow
+        const dateSlots = document.getElementById('dateSlots');
+        dateSlots.innerHTML = '';
+        for (let i = 1; i <= 7; i++) {
+            const d   = new Date(Date.now() + i * 86400000);
+            const day = d.toLocaleDateString('en-IN', { weekday: 'short' });
+            const dt  = d.getDate();
+            const iso = d.toISOString().split('T')[0];
+            const btn = document.createElement('button');
+            btn.className = 'date-slot';
+            btn.dataset.iso = iso;
+            btn.innerHTML = `<div class="date-slot-day">${day}</div><div class="date-slot-date">${dt}</div>`;
+            btn.onclick = () => {
+                document.querySelectorAll('.date-slot').forEach(b => b.classList.remove('sel'));
+                btn.classList.add('sel');
+                selectedDate = iso;
+            };
+            dateSlots.appendChild(btn);
+        }
+
+        // Build time slots from psychologist's times
+        const timeGrid = document.getElementById('timeGrid');
+        timeGrid.innerHTML = bookingTarget.times.map(t => `
+            <button class="time-slot" onclick="pickTime(this,'${t}')">${t}</button>
+        `).join('');
+
+        document.getElementById('bookingModal').classList.add('open');
+    }
+
+    function pickTime(btn, time) {
+        document.querySelectorAll('.time-slot').forEach(b => b.classList.remove('sel'));
+        btn.classList.add('sel');
+        selectedTime = time;
+    }
+
+    function pickSessionType(btn, type) {
+        document.querySelectorAll('.session-type-btn').forEach(b => b.classList.remove('sel'));
+        btn.classList.add('sel');
+        selectedSession = type;
+    }
+
+    function closeBookingOnBg(e) {
+        if (e.target === e.currentTarget)
+            document.getElementById('bookingModal').classList.remove('open');
+    }
+
+    /* ──────────────────────────────────────────
+       SUBMIT BOOKING
+    ────────────────────────────────────────── */
+    function submitBooking() {
+        if (!selectedDate) { showToast('Please select a date'); return; }
+        if (!selectedTime) { showToast('Please select a time'); return; }
+
+        const name    = document.getElementById('bookingName').value.trim();
+        const contact = document.getElementById('bookingContact').value.trim();
+        const concern = document.getElementById('bookingConcern').value.trim();
+
+        if (!name)    { showToast('Please enter your name'); return; }
+        if (!contact) { showToast('Please enter your contact'); return; }
+
+        const p = bookingTarget;
+        const bookingId = 'YM-' + Date.now().toString().slice(-5);
+
+        const bookingObj = {
+            id:          bookingId,
+            psychId:     p.id,
+            doctor:      p.name,
+            name:        name,
+            contact:     contact,
+            date:        selectedDate,
+            time:        selectedTime,
+            sessionType: selectedSession,
+            concern:     concern || 'Not specified',
+            stress:      getStressLabel(),
+            status:      'pending',
+            priceAtBooking: p.fee,
+            createdAt:   new Date().toISOString()
+        };
+
+        // ── Write to student-facing key ──────────────
+        const myBookings = YM.get('ym_student_bookings', []);
+        myBookings.unshift(bookingObj);
+        YM.set('ym_student_bookings', myBookings);
+
+        // ── Write to provider dashboard key (cross-page compat) ──
+        const provBookings = JSON.parse(localStorage.getItem('yodhamind_bookings') || '[]');
+        provBookings.unshift(bookingObj);
+        localStorage.setItem('yodhamind_bookings', JSON.stringify(provBookings));
+
+        // Close modals
+        document.getElementById('bookingModal').classList.remove('open');
+
+        // Show success card
+        const sc = document.getElementById('successCard');
+        document.getElementById('successText').textContent =
+            `Your session with ${p.name} on ${formatDate(selectedDate)} at ${selectedTime} has been requested. They'll confirm within 24 hours.`;
+        sc.classList.add('show');
+        sc.scrollIntoView({ behavior: 'smooth' });
+
+        // Update pending badge
+        updatePendingBadge();
+        showToast('Session booked! ✓');
+    }
+
+    function getStressLabel() {
+        const a = YM.getLatestAssessment('stress');
+        if (!a) return 'Unknown';
+        return a.severity ? a.severity.split(' ')[0] : 'Unknown';
+    }
+
+    /* ──────────────────────────────────────────
+       MY BOOKINGS
+    ────────────────────────────────────────── */
+    function renderMyBookings() {
+        const list = document.getElementById('myBookingsList');
+        const all  = YM.get('ym_student_bookings', []);
+
+        if (!all.length) {
+            list.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">💬</div>
+                    <div class="empty-title">No bookings yet</div>
+                    <div class="empty-text">
+                        Browse counselors and book your first session.
+                        It takes under 2 minutes.
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        list.innerHTML = all.map(b => {
+            const sColor = statusColor(b.status);
+            const badge  = `<span class="booking-badge badge-${b.status}">${statusIcon(b.status)} ${b.status}</span>`;
+            const cancelBtn = (b.status === 'pending')
+                ? `<button class="btn-cancel-booking" onclick="cancelBooking('${b.id}')">Cancel request</button>`
+                : '';
+
+            return `
+                <div class="booking-card">
+                    <div class="booking-status-dot" style="background:${sColor};"></div>
+                    <div style="flex:1;">
+                        <div class="booking-doc-name">${b.doctor}</div>
+                        <div class="booking-detail">
+                            📅 ${formatDate(b.date)} · ${b.time} · ${b.sessionType}
+                        </div>
+                        ${b.concern && b.concern !== 'Not specified'
+                            ? `<div class="booking-concern">"${b.concern}"</div>`
+                            : ''}
+                        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                            ${badge}
+                            <span style="font-size:0.72rem;color:var(--text-light);font-weight:600;">
+                                ₹${b.priceAtBooking} · ${b.id}
+                            </span>
+                        </div>
+                        ${cancelBtn}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function cancelBooking(id) {
+        const all = YM.get('ym_student_bookings', []);
+        const i   = all.findIndex(b => b.id === id);
+        if (i !== -1) {
+            all[i].status = 'cancelled';
+            YM.set('ym_student_bookings', all);
+
+            // Sync with provider dashboard key
+            const prov = JSON.parse(localStorage.getItem('yodhamind_bookings') || '[]');
+            const pi   = prov.findIndex(b => b.id === id);
+            if (pi !== -1) { prov[pi].status = 'cancelled'; }
+            localStorage.setItem('yodhamind_bookings', JSON.stringify(prov));
+        }
+        updatePendingBadge();
+        renderMyBookings();
+        showToast('Booking cancelled');
+    }
+
+    function updatePendingBadge() {
+        const all     = YM.get('ym_student_bookings', []);
+        const pending = all.filter(b => b.status === 'pending').length;
+        const badge   = document.getElementById('pendingBadge');
+        if (pending > 0) {
+            badge.textContent    = pending;
+            badge.style.display  = 'flex';
+        } else {
+            badge.style.display  = 'none';
+        }
+    }
+
+    /* ──────────────────────────────────────────
+       UTILITIES
+    ────────────────────────────────────────── */
+    function statusColor(status) {
+        return { pending: '#D97706', confirmed: '#059669', completed: '#7C5CBF', cancelled: '#94A3B8' }[status] || '#94A3B8';
+    }
+    function statusIcon(status) {
+        return { pending: '⏳', confirmed: '✅', completed: '⭐', cancelled: '❌' }[status] || '•';
+    }
+    function formatDate(iso) {
+        if (!iso) return '';
+        return new Date(iso).toLocaleDateString('en-IN', {
+            weekday: 'short', day: 'numeric', month: 'short'
+        });
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+    }
+
+    /* ──────────────────────────────────────────
+       INIT
+    ────────────────────────────────────────── */
+    document.addEventListener('DOMContentLoaded', () => {
+        renderGrid();
+        updatePendingBadge();
+    });
+    </script>
+
+<script src="../shared/nav-component.js"></script>
+    <script src="../shared/crisis-support.js"></script>
+</body>
+</html>
+
+
+

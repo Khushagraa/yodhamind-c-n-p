@@ -1,0 +1,97 @@
+{
+  "name":             "YodhaMind — Student Wellness",
+  "short_name":       "YodhaMind",
+  "description":      "Mental wellness platform for college students. Track mood, play focus games, journal privately, and connect with counselors.",
+  "start_url":        "/",
+  "scope":            "/",
+  "display":          "standalone",
+  "background_color": "#F0EBF8",
+  "theme_color":      "#7C5CBF",
+  "orientation":      "portrait-primary",
+  "lang":             "en-IN",
+  "dir":              "ltr",
+  "categories":       ["health", "education", "lifestyle"],
+
+  "icons": [
+    {
+      "src":     "/public/icons/icon-72.png",
+      "sizes":   "72x72",
+      "type":    "image/png",
+      "purpose": "any"
+    },
+    {
+      "src":     "/public/icons/icon-96.png",
+      "sizes":   "96x96",
+      "type":    "image/png",
+      "purpose": "any"
+    },
+    {
+      "src":     "/public/icons/icon-128.png",
+      "sizes":   "128x128",
+      "type":    "image/png",
+      "purpose": "any"
+    },
+    {
+      "src":     "/public/icons/icon-192.png",
+      "sizes":   "192x192",
+      "type":    "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src":     "/public/icons/icon-512.png",
+      "sizes":   "512x512",
+      "type":    "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+
+  "shortcuts": [
+    {
+      "name":        "Dashboard",
+      "short_name":  "Home",
+      "description": "Open your wellness dashboard",
+      "url":         "/dashboard",
+      "icons": [{ "src": "/public/icons/icon-96.png", "sizes": "96x96" }]
+    },
+    {
+      "name":        "Quick Check",
+      "short_name":  "Assess",
+      "description": "Take a quick stress or mood check",
+      "url":         "/assessment",
+      "icons": [{ "src": "/public/icons/icon-96.png", "sizes": "96x96" }]
+    },
+    {
+      "name":        "Journal",
+      "short_name":  "Journal",
+      "description": "Write in your private journal",
+      "url":         "/journal",
+      "icons": [{ "src": "/public/icons/icon-96.png", "sizes": "96x96" }]
+    },
+    {
+      "name":        "Mind Gym",
+      "short_name":  "Games",
+      "description": "Play a quick focus game",
+      "url":         "/games",
+      "icons": [{ "src": "/public/icons/icon-96.png", "sizes": "96x96" }]
+    }
+  ],
+
+  "screenshots": [
+    {
+      "src":         "/public/icons/screenshot-dashboard.png",
+      "sizes":       "390x844",
+      "type":        "image/png",
+      "form_factor": "narrow",
+      "label":       "Wellness Dashboard"
+    },
+    {
+      "src":         "/public/icons/screenshot-games.png",
+      "sizes":       "390x844",
+      "type":        "image/png",
+      "form_factor": "narrow",
+      "label":       "Mind Gym Games"
+    }
+  ],
+
+  "prefer_related_applications": false
+}

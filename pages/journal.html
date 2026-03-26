@@ -1,0 +1,1109 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title>YodhaMind — My Journal</title>
+    <meta name="description" content="Your private mental wellness journal. Write freely, tag moods, track your journey.">
+
+    <link rel="icon" href="../public/favicon.svg" type="image/svg+xml">
+    <link rel="manifest" href="../public/manifest.json"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;800&display=swap" rel="stylesheet">
+
+    <!-- Shared data layer -->
+    <script src="../shared/storage.js"></script>
+
+    <style>
+        /* ── Design tokens — identical across all YodhaMind pages ── */
+        :root {
+            --primary:      #7C5CBF;
+            --accent:       #56CFB2;
+            --warm:         #FFF8F0;
+            --text:         #2D2D2D;
+            --soft:         #F0EBF8;
+            --text-light:   #64748b;
+            --glass-border: rgba(255,255,255,0.5);
+            --shadow-soft:  0 20px 40px rgba(0,0,0,0.05);
+            --shadow-hover: 0 30px 60px rgba(124,92,191,0.15);
+            --radius-card:  24px;
+            --radius-btn:   50px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: linear-gradient(180deg, var(--soft) 0%, var(--warm) 40%, #ffffff 100%);
+            color: var(--text);
+            overflow-x: hidden;
+            min-height: 100dvh;
+            padding-bottom: 80px;
+        }
+
+        /* ══════════════════════════════════
+           NAV — exact match to games.html
+        ══════════════════════════════════ */
+        nav#navbar {
+            position: fixed; top: 0; width: 100%;
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            z-index: 1000; padding: 14px 0; transition: all 0.3s;
+        }
+        nav#navbar.scrolled {
+            padding: 10px 0; box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+        .nav-container {
+            max-width: 1200px; margin: 0 auto;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 24px;
+        }
+        .logo {
+            font-size: 1.5rem; font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+        .nav-right { display: flex; align-items: center; gap: 12px; }
+        .nav-links { display: flex; gap: 20px; align-items: center; }
+        .nav-links a {
+            text-decoration: none; color: var(--text);
+            font-weight: 600; font-size: 0.9rem; transition: color 0.2s;
+        }
+        .nav-links a:hover, .nav-links a.active { color: var(--primary); }
+        .btn-cta {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white; padding: 9px 22px; border-radius: var(--radius-btn);
+            font-weight: 700; font-size: 0.88rem;
+            border: none; cursor: pointer; font-family: inherit;
+            box-shadow: 0 8px 20px rgba(124,92,191,0.2);
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-decoration: none; display: inline-block;
+        }
+        .btn-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(124,92,191,0.3); color: white;
+        }
+        @media (max-width: 768px) { .nav-links { display: none; } }
+
+        /* ══════════════════════════════════
+           PAGE WRAPPER
+        ══════════════════════════════════ */
+        .page {
+            max-width: 720px; margin: 0 auto;
+            padding: 94px 20px 40px;
+        }
+
+        /* ══════════════════════════════════
+           VIEW SWITCHER
+        ══════════════════════════════════ */
+        .view { display: none; }
+        .view.active { display: block; }
+
+        /* ══════════════════════════════════
+           SHARED COMPONENTS
+        ══════════════════════════════════ */
+        .card {
+            background: white; border-radius: var(--radius-card);
+            box-shadow: var(--shadow-soft); border: 1px solid rgba(0,0,0,0.03);
+        }
+
+        .back-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: none; border: none; cursor: pointer;
+            font-family: inherit; font-weight: 700; font-size: 0.85rem;
+            color: var(--text-light); padding: 0; margin-bottom: 20px;
+            transition: color 0.2s;
+        }
+        .back-btn:hover { color: var(--primary); }
+
+        .section-label {
+            font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em;
+            text-transform: uppercase; color: var(--primary); margin-bottom: 6px;
+        }
+
+        /* ══════════════════════════════════
+           VIEW 1 — LIST
+        ══════════════════════════════════ */
+
+        /* Stats strip */
+        .stats-strip {
+            display: grid; grid-template-columns: repeat(3,1fr);
+            gap: 12px; margin-bottom: 20px;
+        }
+        .stat-card {
+            background: white; border-radius: 18px;
+            padding: 16px; text-align: center;
+            box-shadow: var(--shadow-soft); border: 1px solid rgba(0,0,0,0.03);
+        }
+        .stat-val {
+            font-size: 1.6rem; font-weight: 800; color: var(--primary);
+            line-height: 1;
+        }
+        .stat-lbl {
+            font-size: 0.68rem; font-weight: 700; color: var(--text-light);
+            text-transform: uppercase; letter-spacing: 0.06em;
+            margin-top: 4px;
+        }
+
+        /* Search & filter row */
+        .filter-row {
+            display: flex; gap: 10px; margin-bottom: 16px;
+            flex-wrap: wrap; align-items: center;
+        }
+        .search-wrap {
+            flex: 1; min-width: 180px; position: relative;
+        }
+        .search-wrap input {
+            width: 100%; padding: 10px 16px 10px 38px;
+            border: 1.5px solid rgba(0,0,0,0.08);
+            border-radius: var(--radius-btn);
+            background: white; font-family: inherit;
+            font-size: 0.88rem; color: var(--text); outline: none;
+            transition: border-color 0.2s;
+        }
+        .search-wrap input:focus { border-color: var(--primary); }
+        .search-wrap::before {
+            content: '🔍'; position: absolute; left: 12px; top: 50%;
+            transform: translateY(-50%); font-size: 0.85rem; pointer-events: none;
+        }
+
+        /* Mood filter chips */
+        .mood-filters { display: flex; gap: 6px; flex-wrap: nowrap; overflow-x: auto; }
+        .mood-filters::-webkit-scrollbar { display: none; }
+        .mf-btn {
+            flex-shrink: 0; padding: 7px 14px; border-radius: var(--radius-btn);
+            border: 1.5px solid rgba(0,0,0,0.08); background: white;
+            font-family: inherit; font-size: 0.78rem; font-weight: 700;
+            color: var(--text-light); cursor: pointer; transition: all 0.18s;
+            white-space: nowrap;
+        }
+        .mf-btn:hover, .mf-btn.active {
+            background: var(--primary); color: white; border-color: var(--primary);
+        }
+
+        /* New entry button */
+        .btn-new-entry {
+            width: 100%; padding: 14px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white; border: none; border-radius: 18px;
+            font-family: inherit; font-weight: 800; font-size: 0.95rem;
+            cursor: pointer; box-shadow: 0 10px 24px rgba(124,92,191,0.25);
+            transition: opacity 0.2s, transform 0.2s; margin-bottom: 20px;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-new-entry:hover { opacity: 0.92; transform: translateY(-2px); }
+
+        /* Entry cards */
+        .entry-card {
+            background: white; border-radius: 20px;
+            border: 1.5px solid rgba(0,0,0,0.04);
+            box-shadow: var(--shadow-soft);
+            padding: 20px 22px; margin-bottom: 12px;
+            cursor: pointer; transition: all 0.22s;
+            display: flex; gap: 14px; align-items: flex-start;
+        }
+        .entry-card:hover {
+            transform: translateY(-3px); box-shadow: var(--shadow-hover);
+            border-color: rgba(124,92,191,0.2);
+        }
+        .entry-mood-dot {
+            width: 36px; height: 36px; border-radius: 12px;
+            background: var(--soft); flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; margin-top: 2px;
+        }
+        .entry-body { flex: 1; min-width: 0; }
+        .entry-title {
+            font-size: 0.95rem; font-weight: 800; color: var(--text);
+            margin-bottom: 4px; white-space: nowrap; overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .entry-preview {
+            font-size: 0.82rem; color: var(--text-light); line-height: 1.5;
+            display: -webkit-box; -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical; overflow: hidden;
+            margin-bottom: 8px;
+        }
+        .entry-meta {
+            display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+        }
+        .entry-date {
+            font-size: 0.7rem; font-weight: 700; color: var(--text-light);
+        }
+        .entry-tag {
+            font-size: 0.65rem; font-weight: 700; padding: 2px 8px;
+            border-radius: 20px; background: var(--soft); color: var(--primary);
+        }
+        .entry-chars {
+            font-size: 0.65rem; color: var(--text-light); font-weight: 600;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center; padding: 60px 20px;
+        }
+        .empty-icon { font-size: 3rem; margin-bottom: 14px; }
+        .empty-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 8px; }
+        .empty-text {
+            font-size: 0.87rem; color: var(--text-light); line-height: 1.7;
+            max-width: 360px; margin: 0 auto 20px;
+        }
+        .empty-prompt {
+            display: inline-block; padding: 8px 18px;
+            background: var(--soft); border-radius: var(--radius-btn);
+            font-size: 0.82rem; font-weight: 700; color: var(--primary);
+            cursor: pointer; transition: all 0.2s; border: none; font-family: inherit;
+        }
+        .empty-prompt:hover { background: var(--primary); color: white; }
+
+        /* ══════════════════════════════════
+           VIEW 2 — WRITE / EDIT
+        ══════════════════════════════════ */
+        .write-header { margin-bottom: 24px; }
+        .write-title-row {
+            display: flex; align-items: center;
+            justify-content: space-between; gap: 10px;
+            margin-bottom: 4px;
+        }
+        .write-heading {
+            font-size: 1.4rem; font-weight: 800; color: var(--text);
+        }
+        .char-count {
+            font-size: 0.75rem; font-weight: 700; color: var(--text-light);
+            flex-shrink: 0; transition: color 0.2s;
+        }
+        .char-count.warn { color: #D97706; }
+        .char-count.limit { color: #DC2626; }
+
+        /* Prompt card */
+        .prompt-card {
+            background: linear-gradient(135deg, var(--soft), rgba(86,207,178,0.1));
+            border: 1px solid rgba(124,92,191,0.15);
+            border-radius: 16px; padding: 14px 18px;
+            margin-bottom: 16px; display: flex; gap: 10px; align-items: center;
+        }
+        .prompt-icon { font-size: 1.2rem; flex-shrink: 0; }
+        .prompt-text {
+            font-size: 0.83rem; font-style: italic; color: var(--text-light);
+            font-weight: 600; line-height: 1.5; flex: 1;
+        }
+        .prompt-refresh {
+            background: none; border: none; cursor: pointer;
+            font-size: 1rem; opacity: 0.5; padding: 0; flex-shrink: 0;
+            transition: opacity 0.2s, transform 0.3s;
+        }
+        .prompt-refresh:hover { opacity: 1; transform: rotate(90deg); }
+
+        /* Form fields */
+        .field-group { margin-bottom: 14px; }
+        .field-label {
+            font-size: 0.78rem; font-weight: 700; color: var(--text-light);
+            display: block; margin-bottom: 7px;
+            text-transform: uppercase; letter-spacing: 0.06em;
+        }
+        .field-input, .field-textarea {
+            width: 100%; padding: 13px 16px;
+            border: 1.5px solid rgba(0,0,0,0.08);
+            border-radius: 16px; font-family: inherit;
+            font-size: 0.92rem; color: var(--text);
+            background: white; outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            resize: none; display: block;
+        }
+        .field-input:focus, .field-textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(124,92,191,0.08);
+            background: #FEFEFE;
+        }
+        .field-textarea {
+            min-height: 200px; line-height: 1.7;
+            font-size: 0.95rem;
+        }
+
+        /* Mood selector row */
+        .mood-pick-row {
+            display: flex; gap: 8px;
+        }
+        .mood-pick-btn {
+            flex: 1; padding: 10px 6px; font-size: 1.3rem;
+            border: 2px solid rgba(0,0,0,0.07); border-radius: 14px;
+            background: var(--soft); cursor: pointer; transition: all 0.15s;
+            font-family: inherit; display: flex; flex-direction: column;
+            align-items: center; gap: 3px;
+        }
+        .mood-pick-btn .mlabel {
+            font-size: 0.58rem; font-weight: 700;
+            color: var(--text-light); letter-spacing: 0.04em;
+        }
+        .mood-pick-btn:hover {
+            border-color: var(--primary); background: white;
+            transform: translateY(-2px);
+        }
+        .mood-pick-btn.sel {
+            border-color: var(--primary); background: white;
+            box-shadow: 0 4px 14px rgba(124,92,191,0.18);
+        }
+
+        /* Tag selector */
+        .tag-row { display: flex; flex-wrap: wrap; gap: 8px; }
+        .tag-btn {
+            padding: 6px 14px; border-radius: var(--radius-btn);
+            font-size: 0.78rem; font-weight: 700;
+            background: var(--soft); color: var(--primary);
+            border: 1.5px solid rgba(124,92,191,0.15);
+            cursor: pointer; font-family: inherit; transition: all 0.15s;
+        }
+        .tag-btn.sel { background: var(--primary); color: white; }
+        .tag-btn:hover { background: var(--primary); color: white; }
+
+        /* Save button */
+        .btn-save-entry {
+            width: 100%; padding: 15px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white; border: none; border-radius: 18px;
+            font-family: inherit; font-weight: 800; font-size: 1rem;
+            cursor: pointer; box-shadow: 0 10px 24px rgba(124,92,191,0.25);
+            transition: opacity 0.2s, transform 0.2s; margin-top: 6px;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-save-entry:hover { opacity: 0.92; transform: translateY(-2px); }
+
+        /* ══════════════════════════════════
+           VIEW 3 — READ
+        ══════════════════════════════════ */
+        .read-header {
+            margin-bottom: 24px;
+            display: flex; justify-content: space-between;
+            align-items: flex-start; gap: 12px;
+        }
+        .read-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+        .btn-icon-action {
+            width: 38px; height: 38px; border-radius: 12px;
+            border: 1.5px solid rgba(0,0,0,0.08); background: white;
+            cursor: pointer; font-size: 1rem; display: flex;
+            align-items: center; justify-content: center;
+            transition: all 0.18s; font-family: inherit;
+        }
+        .btn-icon-action:hover { border-color: var(--primary); background: var(--soft); }
+        .btn-icon-action.danger:hover { border-color: #DC2626; background: #FEF2F2; }
+
+        .read-title {
+            font-size: 1.5rem; font-weight: 800; line-height: 1.3; color: var(--text);
+        }
+
+        .read-meta-bar {
+            display: flex; gap: 10px; align-items: center;
+            flex-wrap: wrap; margin-bottom: 24px; padding-bottom: 18px;
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+        }
+        .read-date { font-size: 0.8rem; font-weight: 700; color: var(--text-light); }
+        .read-mood-badge {
+            display: flex; align-items: center; gap: 4px;
+            font-size: 0.78rem; font-weight: 700;
+            background: var(--soft); color: var(--primary);
+            padding: 3px 10px; border-radius: 20px;
+        }
+        .read-tag-badge {
+            font-size: 0.7rem; font-weight: 700; padding: 3px 10px;
+            border-radius: 20px; background: rgba(86,207,178,0.12); color: #059669;
+        }
+
+        .read-content {
+            font-size: 0.97rem; line-height: 1.8; color: var(--text);
+            white-space: pre-wrap; font-weight: 500;
+        }
+
+        .read-nav-row {
+            display: flex; gap: 10px; margin-top: 32px;
+        }
+        .btn-read-nav {
+            flex: 1; padding: 12px;
+            border: 1.5px solid rgba(0,0,0,0.1); background: white;
+            border-radius: 14px; cursor: pointer; font-family: inherit;
+            font-size: 0.85rem; font-weight: 700; color: var(--text-light);
+            transition: all 0.2s; text-align: center;
+        }
+        .btn-read-nav:hover { border-color: var(--primary); color: var(--primary); }
+        .btn-read-nav.primary-btn {
+            background: var(--soft); border-color: rgba(124,92,191,0.2);
+            color: var(--primary);
+        }
+
+        /* Confirm delete overlay */
+        .confirm-overlay {
+            position: fixed; inset: 0; z-index: 3000;
+            background: rgba(20,10,40,0.5); backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.2s;
+            padding: 20px;
+        }
+        .confirm-overlay.open { opacity: 1; pointer-events: all; }
+        .confirm-box {
+            background: white; border-radius: 24px; padding: 32px;
+            max-width: 360px; width: 100%; text-align: center;
+            box-shadow: 0 40px 80px rgba(0,0,0,0.15);
+            transform: scale(0.93);
+            transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        .confirm-overlay.open .confirm-box { transform: scale(1); }
+        .confirm-icon { font-size: 2.5rem; margin-bottom: 12px; }
+        .confirm-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 8px; }
+        .confirm-text  { font-size: 0.85rem; color: var(--text-light); line-height: 1.6; margin-bottom: 22px; }
+        .confirm-btns  { display: flex; gap: 10px; }
+        .btn-confirm-cancel {
+            flex: 1; padding: 12px; border-radius: 14px;
+            border: 1.5px solid rgba(0,0,0,0.1); background: white;
+            font-family: inherit; font-weight: 700; font-size: 0.9rem;
+            cursor: pointer; color: var(--text-light); transition: all 0.2s;
+        }
+        .btn-confirm-cancel:hover { border-color: var(--primary); color: var(--primary); }
+        .btn-confirm-delete {
+            flex: 1; padding: 12px; border-radius: 14px;
+            background: #DC2626; color: white; border: none;
+            font-family: inherit; font-weight: 800; font-size: 0.9rem;
+            cursor: pointer; transition: opacity 0.2s;
+        }
+        .btn-confirm-delete:hover { opacity: 0.88; }
+
+        /* ══════════════════════════════════
+           MOBILE NAV — exact match games.html
+        ══════════════════════════════════ */
+        .mobile-nav {
+            display: none; position: fixed; bottom: 0; left: 0; width: 100%;
+            background: rgba(255,255,255,0.98); backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(0,0,0,0.05);
+            justify-content: space-around;
+            padding: 10px 0 max(10px, env(safe-area-inset-bottom));
+            z-index: 1000;
+        }
+        .mobile-nav a {
+            text-decoration: none; color: var(--text-light);
+            display: flex; flex-direction: column; align-items: center;
+            gap: 3px; font-size: 0.68rem; font-weight: 700;
+            min-width: 50px; transition: color 0.2s;
+        }
+        .mobile-nav a.active { color: var(--primary); }
+        .mobile-nav a span  { font-size: 1.25rem; line-height: 1; }
+        @media (max-width: 768px) { .mobile-nav { display: flex; } }
+
+        /* ══════════════════════════════════
+           TOAST
+        ══════════════════════════════════ */
+        .toast {
+            position: fixed; bottom: 76px; left: 50%;
+            transform: translateX(-50%) translateY(10px);
+            background: var(--text); color: white;
+            padding: 10px 22px; border-radius: var(--radius-btn);
+            font-size: 0.85rem; font-weight: 700;
+            z-index: 4000; opacity: 0; pointer-events: none;
+            transition: opacity 0.25s, transform 0.25s; white-space: nowrap;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        /* Slide-in animation for entry cards */
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .entry-card { animation: fadeSlideUp 0.3s ease both; }
+
+    </style>
+</head>
+<body>
+
+    <!-- ══════ NAV ══════ -->
+    <nav id="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">✨ YodhaMind</a>
+            <div class="nav-right">
+                <div class="nav-links">
+                    <a href="games.html">Mind Gym</a>
+                    <a href="dashboard.html">Dashboard</a>
+                    <a href="assessment.html">Assess</a>
+                    <a href="journal.html" class="active">Journal</a>
+                </div>
+                <button class="btn-cta" id="navWriteBtn" onclick="openWriteView(null)">
+                    ✏️ New Entry
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ══════ PAGE ══════ -->
+    <main class="page">
+
+        <!-- ───────────────────────────────
+             VIEW 1: LIST
+        ─────────────────────────────────── -->
+        <div id="viewList" class="view active">
+
+            <!-- Stats strip -->
+            <div class="stats-strip" id="statsStrip">
+                <div class="stat-card">
+                    <div class="stat-val" id="statTotal">0</div>
+                    <div class="stat-lbl">Entries</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-val" id="statWeek">0</div>
+                    <div class="stat-lbl">This Week</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-val" id="statStreak">🔥 0</div>
+                    <div class="stat-lbl">Streak</div>
+                </div>
+            </div>
+
+            <!-- New entry button -->
+            <button class="btn-new-entry" onclick="openWriteView(null)">
+                ✏️ Write Today's Entry
+            </button>
+
+            <!-- Search & mood filter -->
+            <div class="filter-row">
+                <div class="search-wrap">
+                    <input
+                        type="text" id="searchInput"
+                        placeholder="Search entries…"
+                        oninput="renderList()"
+                    />
+                </div>
+                <div class="mood-filters" id="moodFilters">
+                    <button class="mf-btn active" data-val="" onclick="setMoodFilter(this,'')">All</button>
+                    <button class="mf-btn" data-val="5" onclick="setMoodFilter(this,'5')">😄</button>
+                    <button class="mf-btn" data-val="4" onclick="setMoodFilter(this,'4')">🙂</button>
+                    <button class="mf-btn" data-val="3" onclick="setMoodFilter(this,'3')">😐</button>
+                    <button class="mf-btn" data-val="2" onclick="setMoodFilter(this,'2')">😔</button>
+                    <button class="mf-btn" data-val="1" onclick="setMoodFilter(this,'1')">😰</button>
+                </div>
+            </div>
+
+            <!-- Entries list -->
+            <div id="entriesList"></div>
+
+        </div>
+
+        <!-- ───────────────────────────────
+             VIEW 2: WRITE / EDIT
+        ─────────────────────────────────── -->
+        <div id="viewWrite" class="view">
+
+            <button class="back-btn" onclick="goToList()">← Back to journal</button>
+
+            <div class="write-header">
+                <div class="write-title-row">
+                    <div class="write-heading" id="writeHeading">New Entry ✍️</div>
+                    <span class="char-count" id="charCount">0 / 2000</span>
+                </div>
+                <div id="writeDateLine" style="font-size:0.8rem;color:var(--text-light);font-weight:600;margin-top:4px;"></div>
+            </div>
+
+            <!-- Writing prompt -->
+            <div class="prompt-card" id="promptCard">
+                <span class="prompt-icon">💡</span>
+                <span class="prompt-text" id="promptText">Loading prompt…</span>
+                <button class="prompt-refresh" onclick="nextPrompt()" title="New prompt">🔄</button>
+            </div>
+
+            <!-- Title -->
+            <div class="field-group">
+                <label class="field-label">Title</label>
+                <input
+                    class="field-input" id="writeTitle"
+                    type="text" maxlength="120"
+                    placeholder="Give this entry a title (optional)"
+                />
+            </div>
+
+            <!-- Content -->
+            <div class="field-group">
+                <label class="field-label">Your thoughts</label>
+                <textarea
+                    class="field-textarea" id="writeContent"
+                    placeholder="Write freely. This is private. No judgment."
+                    oninput="onContentInput()"
+                    maxlength="2000"
+                ></textarea>
+            </div>
+
+            <!-- Mood -->
+            <div class="field-group">
+                <label class="field-label">Mood right now</label>
+                <div class="mood-pick-row">
+                    <button class="mood-pick-btn" data-val="5" onclick="pickMood(this)">😄<span class="mlabel">AMAZING</span></button>
+                    <button class="mood-pick-btn" data-val="4" onclick="pickMood(this)">🙂<span class="mlabel">GOOD</span></button>
+                    <button class="mood-pick-btn" data-val="3" onclick="pickMood(this)">😐<span class="mlabel">OKAY</span></button>
+                    <button class="mood-pick-btn" data-val="2" onclick="pickMood(this)">😔<span class="mlabel">LOW</span></button>
+                    <button class="mood-pick-btn" data-val="1" onclick="pickMood(this)">😰<span class="mlabel">ROUGH</span></button>
+                </div>
+            </div>
+
+            <!-- Tags -->
+            <div class="field-group">
+                <label class="field-label">Tags (select all that apply)</label>
+                <div class="tag-row" id="tagRow">
+                    <button class="tag-btn" data-tag="academics"   onclick="toggleTag(this)">📚 Academics</button>
+                    <button class="tag-btn" data-tag="stress"      onclick="toggleTag(this)">😤 Stress</button>
+                    <button class="tag-btn" data-tag="gratitude"   onclick="toggleTag(this)">🙏 Gratitude</button>
+                    <button class="tag-btn" data-tag="goals"       onclick="toggleTag(this)">🎯 Goals</button>
+                    <button class="tag-btn" data-tag="relationships" onclick="toggleTag(this)">💞 Relationships</button>
+                    <button class="tag-btn" data-tag="reflection"  onclick="toggleTag(this)">🪞 Reflection</button>
+                    <button class="tag-btn" data-tag="anxiety"     onclick="toggleTag(this)">😟 Anxiety</button>
+                    <button class="tag-btn" data-tag="wins"        onclick="toggleTag(this)">🏆 Wins</button>
+                </div>
+            </div>
+
+            <button class="btn-save-entry" onclick="saveEntry()">
+                💾 Save Entry
+            </button>
+
+        </div>
+
+        <!-- ───────────────────────────────
+             VIEW 3: READ
+        ─────────────────────────────────── -->
+        <div id="viewRead" class="view">
+
+            <div class="read-header">
+                <button class="back-btn" onclick="goToList()" style="margin-bottom:0;">← Back</button>
+                <div class="read-actions">
+                    <button class="btn-icon-action" onclick="editEntry()" title="Edit">✏️</button>
+                    <button class="btn-icon-action danger" onclick="confirmDelete()" title="Delete">🗑️</button>
+                </div>
+            </div>
+
+            <h1 class="read-title" id="readTitle" style="margin-bottom:12px;"></h1>
+            <div class="read-meta-bar" id="readMeta"></div>
+            <div class="read-content" id="readContent"></div>
+
+            <div class="read-nav-row">
+                <button class="btn-read-nav primary-btn" onclick="editEntry()">✏️ Edit</button>
+                <button class="btn-read-nav" onclick="goToList()">← All entries</button>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- MOBILE NAV -->
+    <nav class="mobile-nav">
+        <a href="dashboard.html"><span>🏠</span>Home</a>
+        <a href="games.html"><span>🎮</span>Games</a>
+        <a href="assessment.html"><span>📋</span>Assess</a>
+        <a href="psychologist.html"><span>💬</span>Support</a>
+        <a href="journal.html" class="active"><span>📝</span>Journal</a>
+    </nav>
+
+    <!-- Delete confirm overlay -->
+    <div class="confirm-overlay" id="confirmOverlay">
+        <div class="confirm-box">
+            <div class="confirm-icon">🗑️</div>
+            <div class="confirm-title">Delete this entry?</div>
+            <div class="confirm-text">
+                This cannot be undone. Your journal entry will be permanently removed.
+            </div>
+            <div class="confirm-btns">
+                <button class="btn-confirm-cancel" onclick="closeConfirm()">Cancel</button>
+                <button class="btn-confirm-delete" onclick="doDelete()">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast"></div>
+
+
+    <!-- ══════════════════════════════════════
+         JAVASCRIPT
+    ══════════════════════════════════════ -->
+    <script>
+    'use strict';
+
+    /* ── State ───────────────────────────────────── */
+    let moodFilter    = '';        // '' = all, '1'-'5' = filter by mood
+    let editingId     = null;      // id of entry being edited (null = new)
+    let readingId     = null;      // id of currently open entry
+    let writeMood     = null;      // selected mood in write view
+    let writeTags     = new Set(); // selected tags
+
+    /* ── Writing prompts ──────────────────────────── */
+    const PROMPTS = [
+        "What's one thing that's been weighing on your mind lately?",
+        "Describe a moment today when you felt at ease — even briefly.",
+        "What's something you're grateful for right now, no matter how small?",
+        "What do you wish someone understood about how you're feeling?",
+        "Write about a challenge you're facing. What would advice to a friend look like?",
+        "What does your body feel like right now? Tight shoulders, heavy chest, light?",
+        "What's one thing you did today that you're proud of, even slightly?",
+        "What fear is taking up the most space in your head right now?",
+        "If tomorrow could be better than today, what one thing would change?",
+        "Write to your past self from 6 months ago. What do they need to hear?",
+        "What's something you've been avoiding thinking about?",
+        "Describe your ideal day — from waking up to sleeping. Don't censor.",
+        "What person made a difference in your week? What would you say to them?",
+        "When did you last feel truly calm? What were you doing?",
+        "What does 'success' mean to you right now, at this moment in your life?"
+    ];
+
+    let promptIndex = Math.floor(Math.random() * PROMPTS.length);
+
+    function nextPrompt() {
+        promptIndex = (promptIndex + 1) % PROMPTS.length;
+        document.getElementById('promptText').textContent = PROMPTS[promptIndex];
+    }
+
+    /* ── Mood/tag emoji maps ──────────────────────── */
+    const MOOD_EMOJI  = { 5:'😄', 4:'🙂', 3:'😐', 2:'😔', 1:'😰' };
+    const MOOD_LABEL  = { 5:'Amazing', 4:'Good', 3:'Okay', 2:'Low', 1:'Rough' };
+
+    /* ── Nav shadow on scroll ─────────────────────── */
+    window.addEventListener('scroll', () => {
+        document.getElementById('navbar')
+            .classList.toggle('scrolled', window.scrollY > 10);
+    }, { passive: true });
+
+    /* ════════════════════════════════════════════════
+       VIEW SWITCHER
+    ════════════════════════════════════════════════ */
+    function showView(id) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function goToList() {
+        renderStats();
+        renderList();
+        showView('viewList');
+        // Update nav btn to "New Entry"
+        document.getElementById('navWriteBtn').textContent = '✏️ New Entry';
+    }
+
+    /* ════════════════════════════════════════════════
+       LIST VIEW
+    ════════════════════════════════════════════════ */
+    function renderStats() {
+        const all      = YM.get('ym_journal', []);
+        const weekAgo  = Date.now() - 7 * 86400000;
+        const thisWeek = all.filter(e => new Date(e.ts).getTime() > weekAgo);
+        const streak   = YM.getStreak();
+
+        document.getElementById('statTotal').textContent  = all.length;
+        document.getElementById('statWeek').textContent   = thisWeek.length;
+        document.getElementById('statStreak').textContent = '🔥 ' + streak.current;
+    }
+
+    function setMoodFilter(btn, val) {
+        document.querySelectorAll('.mf-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        moodFilter = val;
+        renderList();
+    }
+
+    function renderList() {
+        const query  = document.getElementById('searchInput').value.trim().toLowerCase();
+        const listEl = document.getElementById('entriesList');
+        let entries  = YM.get('ym_journal', []);
+
+        // Mood filter
+        if (moodFilter) {
+            entries = entries.filter(e => String(e.mood) === moodFilter);
+        }
+        // Search filter
+        if (query) {
+            entries = entries.filter(e =>
+                (e.title  || '').toLowerCase().includes(query) ||
+                (e.content|| '').toLowerCase().includes(query) ||
+                (e.tags   || []).some(t => t.toLowerCase().includes(query))
+            );
+        }
+
+        if (!entries.length) {
+            listEl.innerHTML = renderEmpty(query, moodFilter);
+            return;
+        }
+
+        listEl.innerHTML = entries.map((e, i) => {
+            const mood  = e.mood ? MOOD_EMOJI[e.mood] : '📖';
+            const date  = new Date(e.ts).toLocaleDateString('en-IN', {
+                weekday: 'short', month: 'short', day: 'numeric'
+            });
+            const tags  = (e.tags || []).slice(0,2)
+                .map(t => `<span class="entry-tag">${t}</span>`).join('');
+            const title  = e.title  || 'Untitled entry';
+            const preview = (e.content || '').slice(0, 120);
+            const chars  = e.content ? e.content.length : 0;
+
+            return `
+                <div class="entry-card" onclick="openReadView('${e.id}')"
+                     style="animation-delay:${i * 0.04}s">
+                    <div class="entry-mood-dot">${mood}</div>
+                    <div class="entry-body">
+                        <div class="entry-title">${escHtml(title)}</div>
+                        <div class="entry-preview">${escHtml(preview)}${preview.length >= 120 ? '…' : ''}</div>
+                        <div class="entry-meta">
+                            <span class="entry-date">${date}</span>
+                            ${tags}
+                            <span class="entry-chars">${chars} chars</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function renderEmpty(query, moodFilter) {
+        if (query || moodFilter) {
+            return `
+                <div class="empty-state">
+                    <div class="empty-icon">🔍</div>
+                    <div class="empty-title">No entries match</div>
+                    <div class="empty-text">Try clearing the search or changing the mood filter.</div>
+                    <button class="empty-prompt" onclick="clearFilters()">Clear filters</button>
+                </div>
+            `;
+        }
+        return `
+            <div class="empty-state">
+                <div class="empty-icon">📖</div>
+                <div class="empty-title">Your journal is empty</div>
+                <div class="empty-text">
+                    Writing even 3 sentences a day is scientifically proven to reduce
+                    stress hormones and improve clarity. Start today.
+                </div>
+                <button class="empty-prompt" onclick="openWriteView(null)">
+                    ✏️ Write your first entry
+                </button>
+            </div>
+        `;
+    }
+
+    function clearFilters() {
+        document.getElementById('searchInput').value = '';
+        moodFilter = '';
+        document.querySelectorAll('.mf-btn').forEach(b => b.classList.remove('active'));
+        document.querySelector('.mf-btn[data-val=""]').classList.add('active');
+        renderList();
+    }
+
+    /* ════════════════════════════════════════════════
+       WRITE VIEW
+    ════════════════════════════════════════════════ */
+    function openWriteView(entryId) {
+        editingId = entryId;
+        writeMood = null;
+        writeTags = new Set();
+
+        // Reset form
+        document.getElementById('writeTitle').value   = '';
+        document.getElementById('writeContent').value = '';
+        document.querySelectorAll('.mood-pick-btn').forEach(b => b.classList.remove('sel'));
+        document.querySelectorAll('.tag-btn').forEach(b => b.classList.remove('sel'));
+        document.getElementById('charCount').textContent = '0 / 2000';
+        document.getElementById('charCount').className   = 'char-count';
+
+        // Set prompt + date
+        document.getElementById('promptText').textContent = PROMPTS[promptIndex];
+        document.getElementById('writeDateLine').textContent =
+            new Date().toLocaleDateString('en-IN', {
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+            });
+
+        if (entryId) {
+            // EDIT MODE — populate form
+            const all   = YM.get('ym_journal', []);
+            const entry = all.find(e => e.id === entryId);
+            if (entry) {
+                document.getElementById('writeHeading').textContent = 'Edit Entry ✏️';
+                document.getElementById('writeTitle').value         = entry.title   || '';
+                document.getElementById('writeContent').value       = entry.content || '';
+                updateCharCount(entry.content || '');
+
+                if (entry.mood) {
+                    writeMood = entry.mood;
+                    const mBtn = document.querySelector(`.mood-pick-btn[data-val="${entry.mood}"]`);
+                    if (mBtn) mBtn.classList.add('sel');
+                }
+                (entry.tags || []).forEach(tag => {
+                    writeTags.add(tag);
+                    const tBtn = document.querySelector(`.tag-btn[data-tag="${tag}"]`);
+                    if (tBtn) tBtn.classList.add('sel');
+                });
+            }
+        } else {
+            document.getElementById('writeHeading').textContent = 'New Entry ✍️';
+        }
+
+        // Hide prompt in edit mode (less confusing)
+        document.getElementById('promptCard').style.display = entryId ? 'none' : 'flex';
+
+        document.getElementById('navWriteBtn').textContent = '💾 Save';
+        showView('viewWrite');
+    }
+
+    /* ── Char count ────────────────────────────── */
+    function onContentInput() {
+        const val = document.getElementById('writeContent').value;
+        updateCharCount(val);
+    }
+
+    function updateCharCount(val) {
+        const len = val.length;
+        const el  = document.getElementById('charCount');
+        el.textContent = `${len} / 2000`;
+        el.className   = 'char-count' +
+            (len > 1800 ? ' limit' : len > 1500 ? ' warn' : '');
+    }
+
+    /* ── Mood / tag picks ──────────────────────── */
+    function pickMood(btn) {
+        document.querySelectorAll('.mood-pick-btn').forEach(b => b.classList.remove('sel'));
+        btn.classList.add('sel');
+        writeMood = parseInt(btn.dataset.val);
+    }
+
+    function toggleTag(btn) {
+        const tag = btn.dataset.tag;
+        if (writeTags.has(tag)) {
+            writeTags.delete(tag);
+            btn.classList.remove('sel');
+        } else {
+            writeTags.add(tag);
+            btn.classList.add('sel');
+        }
+    }
+
+    /* ── Save entry ────────────────────────────── */
+    function saveEntry() {
+        const content = document.getElementById('writeContent').value.trim();
+        const title   = document.getElementById('writeTitle').value.trim();
+
+        if (!content) {
+            showToast('Write something first ✏️');
+            document.getElementById('writeContent').focus();
+            return;
+        }
+
+        if (editingId) {
+            // UPDATE existing entry — modify in-place
+            const all   = YM.get('ym_journal', []);
+            const index = all.findIndex(e => e.id === editingId);
+            if (index !== -1) {
+                all[index] = {
+                    ...all[index],
+                    title:   title,
+                    content: content,
+                    mood:    writeMood,
+                    tags:    Array.from(writeTags),
+                    updated: new Date().toISOString()
+                };
+                YM.set('ym_journal', all);
+            }
+            showToast('Entry updated 📝');
+            openReadView(editingId); // go back to read view
+        } else {
+            // CREATE new entry via storage layer (triggers streak)
+            YM.saveJournalEntry(title, content, writeMood, Array.from(writeTags));
+            showToast('Entry saved 💾');
+            goToList();
+        }
+    }
+
+    /* ════════════════════════════════════════════════
+       READ VIEW
+    ════════════════════════════════════════════════ */
+    function openReadView(id) {
+        readingId   = id;
+        const all   = YM.get('ym_journal', []);
+        const entry = all.find(e => e.id === id);
+        if (!entry) { goToList(); return; }
+
+        // Title
+        document.getElementById('readTitle').textContent =
+            entry.title || 'Untitled entry';
+
+        // Meta bar
+        const date     = new Date(entry.ts).toLocaleDateString('en-IN', {
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+        });
+        const moodHtml = entry.mood
+            ? `<span class="read-mood-badge">${MOOD_EMOJI[entry.mood]} ${MOOD_LABEL[entry.mood]}</span>`
+            : '';
+        const tagsHtml = (entry.tags || [])
+            .map(t => `<span class="read-tag-badge">${t}</span>`).join('');
+
+        document.getElementById('readMeta').innerHTML =
+            `<span class="read-date">${date}</span>${moodHtml}${tagsHtml}`;
+
+        // Content
+        document.getElementById('readContent').textContent = entry.content || '';
+
+        showView('viewRead');
+        document.getElementById('navWriteBtn').textContent = '✏️ Edit';
+    }
+
+    function editEntry() {
+        if (readingId) openWriteView(readingId);
+    }
+
+    /* ── Delete ─────────────────────────────────── */
+    function confirmDelete() {
+        document.getElementById('confirmOverlay').classList.add('open');
+    }
+
+    function closeConfirm() {
+        document.getElementById('confirmOverlay').classList.remove('open');
+    }
+
+    function doDelete() {
+        if (!readingId) return;
+        YM.deleteJournalEntry(readingId);
+        closeConfirm();
+        showToast('Entry deleted');
+        readingId = null;
+        goToList();
+    }
+
+    /* ════════════════════════════════════════════════
+       UTILITIES
+    ════════════════════════════════════════════════ */
+    function escHtml(str) {
+        return str
+            .replace(/&/g,'&amp;')
+            .replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;')
+            .replace(/"/g,'&quot;');
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+    }
+
+    /* ════════════════════════════════════════════════
+       INIT
+    ════════════════════════════════════════════════ */
+    document.addEventListener('DOMContentLoaded', () => {
+        renderStats();
+        renderList();
+
+        // If URL has ?new=1 → open write view directly
+        if (new URLSearchParams(window.location.search).get('new') === '1') {
+            openWriteView(null);
+        }
+    });
+    </script>
+
+<script src="../shared/nav-component.js"></script>
+    <script src="../shared/crisis-support.js"></script>
+</body>
+</html>
+
+
+

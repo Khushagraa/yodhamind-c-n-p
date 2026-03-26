@@ -1,0 +1,354 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Yodha Break - Lumina</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f172a;
+            --text: #f8fafc;
+            --accent: #6366f1;
+            --paddle: #a855f7;
+            --ball: #22d3ee;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Outfit', sans-serif;
+            overflow: hidden;
+            height: 100vh; width: 100vw;
+            display: flex; flex-direction: column;
+        }
+
+        /* Canvas container */
+        #gameContainer {
+            position: relative;
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            overflow: hidden;
+        }
+
+        canvas { display: block; width: 100%; height: 100%; }
+
+        /* UI Overlay */
+        .ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; z-index: 10;
+        }
+
+        .header {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            font-size: 1.2rem; font-weight: 700; text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            width: 100%; max-width: 800px; margin: 0 auto;
+        }
+
+        .score-box span { color: var(--accent); font-size: 1.5rem; }
+        .lives-box { letter-spacing: 5px; }
+
+        /* Screens */
+        .screen {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(12px);
+            padding: 40px; border-radius: 24px; text-align: center;
+            border: 1px solid rgba(255,255,255,0.1); pointer-events: auto;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5); min-width: 320px;
+            transition: opacity 0.3s; z-index: 20;
+        }
+
+        .hidden { opacity: 0; pointer-events: none; display: none; }
+
+        h1 { font-size: 2.5rem; background: linear-gradient(135deg, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; }
+        p { color: #94a3b8; margin-bottom: 30px; line-height: 1.5; font-size: 1.1rem; }
+
+        .btn {
+            background: linear-gradient(135deg, var(--accent), var(--paddle));
+            color: white; border: none; padding: 16px 48px; font-size: 1.1rem; font-weight: 700;
+            border-radius: 50px; cursor: pointer; box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+            transition: transform 0.2s, box-shadow 0.2s; text-transform: uppercase; letter-spacing: 1px; margin: 5px;
+        }
+        .btn:active { transform: scale(0.95); }
+        .btn-sec { background: transparent; border: 1px solid #475569; box-shadow: none; }
+        
+        .mobile-hint { display: none; font-size: 0.9rem; opacity: 0.7; margin-top: 25px; color: var(--ball); }
+        @media (hover: none) and (pointer: coarse) { .mobile-hint { display: block; } }
+
+    </style>
+</head>
+<body>
+
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+
+        <div class="ui-layer">
+            <div class="header">
+                <div class="score-box">SCORE: <span id="scoreEl">0</span></div>
+                <div class="lives-box" id="livesEl">❤️❤️❤️</div>
+            </div>
+        </div>
+
+        <div id="startScreen" class="screen">
+            <h1>Yodha Break</h1>
+            <p>Smash the walls.<br>Clear your mind.</p>
+            <button class="btn" onclick="startGame()">Start</button>
+            <div class="mobile-hint">👆 Drag anywhere to move<br>Tap to launch</div>
+        </div>
+
+        <div id="gameOverScreen" class="screen hidden">
+            <h1 id="endTitle">Session Complete</h1>
+            <p id="endScore">Score: 0</p>
+            <button class="btn" onclick="startGame()">Restart</button>
+            <button class="btn btn-sec" onclick="window.location.href='../pages/games.html'">Exit</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Constants
+        const BALL_RADIUS = 8;
+        const PADDLE_HEIGHT = 18;
+        const BRICK_ROWS = 5;
+        const BRICK_COLS = 6;
+        
+        // State
+        let width, height, dpr;
+        let animationId;
+        let score = 0;
+        let lives = 3;
+        let gameRunning = false;
+        
+        // Entities
+        let paddle = { x: 0, y: 0, w: 100, h: PADDLE_HEIGHT, color: '#a855f7' };
+        let ball = { x: 0, y: 0, dx: 0, dy: 0, speed: 6, active: false };
+        let bricks = [];
+        let particles = [];
+
+        const brickColors = ['#f43f5e', '#f97316', '#eab308', '#22d3ee', '#3b82f6'];
+
+        // --- INIT & RESIZE ---
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            dpr = window.devicePixelRatio || 1;
+
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            ctx.scale(dpr, dpr);
+
+            // Paddle relative to screen
+            paddle.w = Math.min(160, width * 0.35);
+            paddle.y = height - 80;
+
+            if (!ball.active) resetBall();
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- CONTROLS ---
+        function movePaddle(clientX) {
+            let relativeX = clientX - paddle.w / 2;
+            // Clamp
+            if (relativeX < 10) relativeX = 10;
+            if (relativeX + paddle.w > width - 10) relativeX = width - paddle.w - 10;
+            paddle.x = relativeX;
+
+            if (!ball.active) resetBall();
+        }
+
+        document.addEventListener('mousemove', e => movePaddle(e.clientX));
+        document.addEventListener('touchmove', e => {
+            e.preventDefault();
+            movePaddle(e.touches[0].clientX);
+        }, { passive: false });
+
+        document.addEventListener('click', () => { if(gameRunning && !ball.active) launchBall(); });
+        document.addEventListener('touchstart', () => { if(gameRunning && !ball.active) launchBall(); });
+
+        function launchBall() {
+            ball.active = true;
+            ball.dy = -ball.speed;
+            ball.dx = (Math.random() * 2 - 1) * 4;
+        }
+
+        function resetBall() {
+            ball.active = false;
+            ball.x = paddle.x + paddle.w / 2;
+            ball.y = paddle.y - BALL_RADIUS - 2;
+            ball.dx = 0;
+            ball.dy = 0;
+        }
+
+        // --- GAME LOGIC ---
+        function initBricks() {
+            bricks = [];
+            const padding = 10;
+            const topOffset = 80;
+            const totalPad = (BRICK_COLS + 1) * padding;
+            const brickW = (width - totalPad) / BRICK_COLS;
+            const brickH = 25;
+
+            for(let r=0; r<BRICK_ROWS; r++) {
+                for(let c=0; c<BRICK_COLS; c++) {
+                    bricks.push({
+                        x: (c * (brickW + padding)) + padding,
+                        y: (r * (brickH + padding)) + topOffset,
+                        w: brickW, h: brickH, status: 1, color: brickColors[r]
+                    });
+                }
+            }
+        }
+
+        function update() {
+            if (!ball.active) return;
+
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+
+            // 1. Walls
+            if (ball.x + BALL_RADIUS > width) { ball.x = width - BALL_RADIUS; ball.dx *= -1; }
+            if (ball.x - BALL_RADIUS < 0) { ball.x = BALL_RADIUS; ball.dx *= -1; }
+            if (ball.y - BALL_RADIUS < 0) { ball.y = BALL_RADIUS; ball.dy *= -1; }
+            
+            // Death
+            if (ball.y - BALL_RADIUS > height) {
+                lives--;
+                document.getElementById('livesEl').innerText = "❤️".repeat(lives);
+                if (lives > 0) resetBall();
+                else gameOver();
+            }
+
+            // 2. Paddle
+            if (ball.y + BALL_RADIUS >= paddle.y && ball.y - BALL_RADIUS <= paddle.y + paddle.h &&
+                ball.x >= paddle.x && ball.x <= paddle.x + paddle.w) {
+                
+                ball.dy = -Math.abs(ball.dy); // Force Up
+                ball.y = paddle.y - BALL_RADIUS - 2; // Unstick
+                
+                // Spin
+                let hitPoint = (ball.x - (paddle.x + paddle.w/2)) / (paddle.w/2);
+                ball.dx = hitPoint * 8;
+                
+                spawnParticles(ball.x, paddle.y, '#fff');
+            }
+
+            // 3. Bricks
+            let activeBricks = 0;
+            bricks.forEach(b => {
+                if (b.status === 1) {
+                    activeBricks++;
+                    if (ball.x > b.x && ball.x < b.x + b.w && ball.y > b.y && ball.y < b.y + b.h) {
+                        ball.dy *= -1;
+                        b.status = 0;
+                        score += 10;
+                        document.getElementById('scoreEl').innerText = score;
+                        spawnParticles(b.x + b.w/2, b.y + b.h/2, b.color);
+                    }
+                }
+            });
+
+            if (activeBricks === 0) {
+                initBricks();
+                ball.speed += 1;
+                resetBall();
+            }
+
+            // Particles
+            particles.forEach((p, i) => {
+                p.x += p.dx; p.y += p.dy; p.life -= 0.05;
+                if (p.life <= 0) particles.splice(i, 1);
+            });
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+
+            // Bricks
+            bricks.forEach(b => {
+                if (b.status === 1) {
+                    ctx.fillStyle = b.color;
+                    ctx.shadowBlur = 15; ctx.shadowColor = b.color;
+                    ctx.beginPath(); ctx.roundRect(b.x, b.y, b.w, b.h, 5); ctx.fill();
+                    ctx.shadowBlur = 0;
+                    ctx.fillStyle = "rgba(255,255,255,0.2)";
+                    ctx.fillRect(b.x, b.y, b.w, b.h/2);
+                }
+            });
+
+            // Paddle
+            ctx.fillStyle = paddle.color;
+            ctx.shadowBlur = 20; ctx.shadowColor = paddle.color;
+            ctx.beginPath(); ctx.roundRect(paddle.x, paddle.y, paddle.w, paddle.h, 10); ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Ball
+            ctx.fillStyle = '#22d3ee';
+            ctx.shadowBlur = 15; ctx.shadowColor = '#22d3ee';
+            ctx.beginPath(); ctx.arc(ball.x, ball.y, BALL_RADIUS, 0, Math.PI*2); ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Particles
+            particles.forEach(p => {
+                ctx.globalAlpha = p.life; ctx.fillStyle = p.color;
+                ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI*2); ctx.fill();
+                ctx.globalAlpha = 1;
+            });
+        }
+
+        function spawnParticles(x, y, color) {
+            for(let i=0; i<8; i++) {
+                particles.push({ x, y, dx: (Math.random()-0.5)*6, dy: (Math.random()-0.5)*6, life: 1, color });
+            }
+        }
+
+        function loop() {
+            if (gameRunning) {
+                update();
+                draw();
+                animationId = requestAnimationFrame(loop);
+            }
+        }
+
+        function startGame() {
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            score = 0; lives = 3;
+            document.getElementById('scoreEl').innerText = score;
+            document.getElementById('livesEl').innerText = "❤️❤️❤️";
+            gameRunning = true;
+            resize();
+            initBricks();
+            resetBall();
+            loop();
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            cancelAnimationFrame(animationId);
+            document.getElementById('endTitle').innerText = score > 200 ? "Amazing Focus!" : "Session Complete";
+            document.getElementById('endScore').innerText = "Score: " + score;
+            document.getElementById('gameOverScreen').classList.remove('hidden');
+            document.getElementById('gameOverScreen').style.display = "block";
+        }
+
+        // Polyfill
+        if (!ctx.roundRect) {
+            ctx.roundRect = function(x, y, w, h, r) {
+                if (w < 2 * r) r = w / 2; if (h < 2 * r) r = h / 2;
+                this.beginPath(); this.moveTo(x+r, y); this.arcTo(x+w, y, x+w, y+h, r);
+                this.arcTo(x+w, y+h, x, y+h, r); this.arcTo(x, y+h, x, y, r); this.arcTo(x, y, x+w, y, r); this.closePath();
+            };
+        }
+    </script>
+    <script src="../shared/crisis-support.js"></script>
+</body>
+</html>
+
+

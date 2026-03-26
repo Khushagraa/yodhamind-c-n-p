@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#7C5CBF"/>
+      <stop offset="100%" stop-color="#56CFB2"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#ffffff" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded background tile -->
+  <rect width="64" height="64" rx="15" fill="url(#bgGrad)"/>
+  <rect width="64" height="64" rx="15" fill="url(#sheen)"/>
+
+  <!-- Y letterform — left arm -->
+  <line x1="15" y1="13" x2="32" y2="33"
+        stroke="white" stroke-width="5.5"
+        stroke-linecap="round"/>
+
+  <!-- Y letterform — right arm -->
+  <line x1="49" y1="13" x2="32" y2="33"
+        stroke="white" stroke-width="5.5"
+        stroke-linecap="round"/>
+
+  <!-- Y letterform — stem -->
+  <line x1="32" y1="33" x2="32" y2="52"
+        stroke="white" stroke-width="5.5"
+        stroke-linecap="round"/>
+
+  <!-- Node dots at the three endpoints -->
+  <circle cx="15" cy="13" r="3.5" fill="white" opacity="0.85"/>
+  <circle cx="49" cy="13" r="3.5" fill="white" opacity="0.85"/>
+  <circle cx="32" cy="52" r="3.5" fill="white" opacity="0.85"/>
+
+  <!-- Centre mind-point: white ring with gradient fill -->
+  <circle cx="32" cy="33" r="5.5" fill="white"/>
+  <circle cx="32" cy="33" r="3"   fill="url(#bgGrad)"/>
+</svg>

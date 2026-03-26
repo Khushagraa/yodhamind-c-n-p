@@ -1,0 +1,768 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>YodhaMind - Mind Gym</title>
+
+    <!-- Upgraded Font to match Landing Page -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* ---------- Design System (Matched to Landing Page) ---------- */
+        :root {
+            --primary: #7C5CBF;
+            --accent: #56CFB2;
+            --warm: #FFF8F0;
+            --text: #2D2D2D;
+            --soft: #F0EBF8;
+            --text-light: #64748b;
+            --glass: rgba(255, 255, 255, 0.95);
+            --glass-border: rgba(255, 255, 255, 0.5);
+            --shadow-soft: 0 20px 40px rgba(0,0,0,0.05);
+            --shadow-hover: 0 30px 60px rgba(124, 92, 191, 0.15);
+            --highlight: #FFF3CD;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: linear-gradient(180deg, var(--soft) 0%, var(--warm) 40%, #ffffff 100%);
+            color: var(--text);
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        /* ---------- Navigation & Audio Toggle ---------- */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(255,255,255,0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            z-index: 1000;
+            padding: 15px 0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 24px;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .btn-audio {
+            background: white;
+            border: 1px solid #ddd;
+            color: var(--text-light);
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: 0.3s;
+            font-family: inherit;
+        }
+        .btn-audio.playing {
+            background: var(--soft);
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .btn-home {
+            background: white;
+            color: var(--text) !important;
+            border: 1px solid #ddd;
+            padding: 8px 20px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-home:hover {
+            background: var(--text);
+            color: white !important;
+        }
+
+        /* ---------- Mind Gym Header & Tracker ---------- */
+        #mind-gym {
+            padding: 130px 24px 60px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .engagement-badge {
+            display: inline-flex;
+            align-items: center;
+            background: white;
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--primary);
+            box-shadow: 0 10px 20px rgba(124, 92, 191, 0.1);
+            margin-bottom: 20px;
+            border: 1px solid rgba(124, 92, 191, 0.2);
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .section-header h2 {
+            font-size: 2.5rem;
+            color: var(--text);
+            margin-bottom: 15px;
+            font-weight: 800;
+        }
+
+        .section-header p {
+            color: var(--text-light);
+            font-size: 1.15rem;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+            font-weight: 500;
+        }
+
+        /* ---------- Mood Selector ---------- */
+        .mood-mirror {
+            background: white;
+            border-radius: 24px;
+            padding: 40px;
+            margin: 0 auto 50px;
+            max-width: 900px;
+            box-shadow: var(--shadow-soft);
+            text-align: center;
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+
+        .mood-mirror h3 {
+            font-size: 1.3rem;
+            color: var(--text);
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .mood-options {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .mood-btn {
+            padding: 10px 20px;
+            border-radius: 50px;
+            border: 1px solid #ddd;
+            background: white;
+            color: var(--text-light);
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .mood-btn:hover, .mood-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 10px 20px rgba(124, 92, 191, 0.25);
+            transform: translateY(-2px);
+        }
+
+        /* ---------- GAMES GRID (Mobile First) ---------- */
+        .games-grid {
+            display: grid;
+            grid-template-columns: 1fr; /* Mobile default */
+            gap: 24px;
+        }
+
+        @media (min-width: 768px) {
+            .games-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (min-width: 1024px) {
+            .games-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+
+        .game-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid rgba(0,0,0,0.04);
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .game-card:hover {
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-hover);
+            border-color: var(--accent);
+        }
+
+        /* Highlight logic classes */
+        .game-card.dimmed {
+            opacity: 0.4;
+            transform: scale(0.98);
+            filter: grayscale(0.5);
+        }
+        .game-card.highlighted {
+            border: 2px solid var(--primary);
+            box-shadow: 0 15px 35px rgba(124, 92, 191, 0.2);
+            transform: translateY(-4px);
+        }
+
+        /* Visual Header Areas */
+        .card-visual { height: 130px; width: 100%; position: relative; overflow: hidden; }
+
+        /* --- Preserved CSS Art for Games (Adjusted tones slightly) --- */
+        .visual-cards { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); }
+        .visual-cards::after { content: ''; position: absolute; width: 40px; height: 50px; background: rgba(255,255,255,0.4); border-radius: 4px; top: 50%; left: 50%; transform: translate(-40%, -40%) rotate(10deg); }
+        .visual-cards::before { content: ''; position: absolute; width: 40px; height: 50px; background: rgba(255,255,255,0.2); border-radius: 4px; top: 50%; left: 50%; transform: translate(-60%, -60%) rotate(-10deg); }
+        
+        .visual-aura { background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%); }
+        .visual-aura::after { content: ''; position: absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:60px; height:60px; border-radius:50%; background:radial-gradient(circle, rgba(255,255,255,0.8) 0%, transparent 70%); animation: pulse 3s infinite; }
+        
+        .visual-mandala { background: linear-gradient(45deg, #ff9a9e 0%, #fecfef 99%); }
+        .visual-mandala::before { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; border: 3px dashed rgba(255,255,255,0.6); border-radius: 50%; animation: spin 20s linear infinite; }
+        
+        .visual-flow { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .visual-flow::before { content: ''; position: absolute; width: 150%; height: 150%; background: rgba(255,255,255,0.2); border-radius: 40%; top: -80%; left: -20%; animation: flowWave 6s infinite linear; }
+        
+        .visual-break { background: linear-gradient(135deg, #FF6B6B 0%, #C0392B 100%); } /* Red tone for stress/break */
+        .visual-break::after { content: ''; position: absolute; top: 0; left: 50%; height: 100%; width: 4px; background: #fff; box-shadow: 0 0 15px #fff; transform: translateX(-50%) skewX(20deg); animation: crack 3s infinite; }
+        
+        .visual-match { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
+        .visual-match::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 30px; height: 40px; background: rgba(255,255,255,0.3); border-radius: 4px; animation: flip 3s infinite; }
+        
+        .visual-galaxy { background: linear-gradient(135deg, #30cfd0 0%, #330867 100%); }
+        .visual-galaxy::before { content: '✦'; color:white; font-size:20px; position:absolute; top:20%; left:30%; opacity:0.6; animation:pulse 2s infinite; }
+        
+        .visual-echoes { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .visual-echoes::after { content: 'IIlIIllI'; font-family:monospace; color:rgba(255,255,255,0.4); font-size:24px; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); letter-spacing:2px; }
+        
+        .visual-terrarium { background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%); }
+        .visual-terrarium::before { content: '🌿'; font-size: 40px; position: absolute; bottom: 5px; right: 10px; opacity: 0.6; animation: float 3s infinite ease-in-out; }
+        
+        .visual-focus { background: linear-gradient(135deg, #434343 0%, #000000 100%); }
+        .visual-focus::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 25px; height: 25px; background: white; border-radius: 50%; box-shadow: 0 0 0 6px rgba(255,255,255,0.2); animation: pulse 2s infinite; }
+        
+        .visual-shredder { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .visual-shredder::after { content: '🌪️'; font-size: 50px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0.3; animation: spin 10s linear infinite; }
+        
+        .visual-untangle { background: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%); }
+        .visual-untangle::before { content: ''; position: absolute; width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.6); border-radius: 50%; top: 40%; left: 45%; animation: float 4s ease-in-out infinite; }
+        .visual-untangle::after { content: ''; position: absolute; width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.6); border-radius: 50%; top: 50%; left: 55%; animation: float 4s ease-in-out infinite reverse; }
+
+        .visual-memory { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); }
+        .visual-memory::before { content: ''; position: absolute; width: 46px; height: 46px; border-radius: 10px; border: 2px solid rgba(251,191,36,0.8); top: 32%; left: 36%; box-shadow: 24px 24px 0 rgba(251,191,36,0.35); }
+
+        @keyframes flowWave { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes pulse { 0% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.1); } 100% { transform: translate(-50%, -50%) scale(1); } }
+        @keyframes flip { 0% { transform: translate(-50%, -50%) rotateY(0); } 50% { transform: translate(-50%, -50%) rotateY(180deg); } 100% { transform: translate(-50%, -50%) rotateY(0); } }
+        @keyframes crack { 0% { opacity:0.3; width:2px; } 50% { opacity:1; width:6px; } 100% { opacity:0.3; width:2px; } }
+
+        /* Card Content Redesign */
+        .card-content { padding: 20px; flex-grow: 1; display: flex; flex-direction: column; }
+        
+        .card-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .mood-tag { font-size: 0.75rem; font-weight: 700; background: var(--soft); color: var(--primary); padding: 4px 10px; border-radius: 6px; }
+        .time-badge { font-size: 0.75rem; color: var(--text-light); font-weight: 600; display: flex; align-items: center; gap: 4px; }
+
+        .game-card h3 { font-size: 1.25rem; margin-bottom: 8px; color: var(--text); font-weight: 800; }
+        .game-card p { font-size: 0.9rem; color: var(--text-light); line-height: 1.5; margin-bottom: 20px; flex-grow: 1; font-weight: 500;}
+        
+        .play-btn {
+            margin-top: auto;
+            align-self: flex-start;
+            padding: 10px 20px;
+            border-radius: 12px;
+            background: var(--warm);
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
+            border: 1px solid rgba(124, 92, 191, 0.2);
+            width: 100%;
+            text-align: center;
+        }
+        .game-card:hover .play-btn {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* Coming Soon Placeholder */
+        .coming-soon-card {
+            background: var(--soft);
+            border: 2px dashed rgba(124, 92, 191, 0.3);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-light);
+            min-height: 320px;
+        }
+        .coming-soon-card span { font-size: 2rem; margin-bottom: 10px; }
+        .coming-soon-card h3 { font-size: 1.1rem; color: var(--primary); margin-bottom: 5px; }
+
+        /* ---------- Dashboard ---------- */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            padding: 20px 0;
+            max-width: 1200px;
+            margin: 0 auto 100px;
+        }
+
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 24px;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+
+        .card h3 {
+            margin-bottom: 20px;
+            color: var(--text);
+            font-size: 1.3rem;
+            font-weight: 800;
+        }
+
+        /* Footer */
+        footer {
+            background: #0f172a;
+            color: white;
+            text-align: center;
+            padding: 40px 20px;
+            margin-top: 40px;
+            font-size: 0.9rem;
+            color: #94a3b8;
+        }
+
+        /* Mobile Nav */
+        .mobile-nav {
+            display: none; position: fixed; bottom: 0; left: 0; width: 100%;
+            background: rgba(255,255,255,0.98); backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(0,0,0,0.05);
+            justify-content: space-around; padding: 12px; z-index: 1000;
+        }
+        .mobile-nav a { text-decoration: none; color: var(--text-light); display: flex; flex-direction: column; align-items: center; font-size: 0.75rem; font-weight: 600;}
+        @media (max-width: 768px) {
+            .nav-controls .btn-home { display: none; } /* Hide desktop home btn on mobile */
+            .mobile-nav { display: flex; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Ambient Audio Source (Nature/Rain lo-fi placeholder) -->
+    <audio id="ambient-audio" loop>
+        <!-- Using a free placeholder relaxing sound. In production, replace with your own asset -->
+        <source src="https://cdn.pixabay.com/download/audio/2022/05/16/audio_9ed1b34375.mp3?filename=soft-rain-ambient-111154.mp3" type="audio/mpeg">
+    </audio>
+
+    <nav>
+        <div class="nav-container">
+            <a href="../pages/index.html" class="logo">✨ YodhaMind</a>
+            <div class="nav-controls">
+                <button class="btn-audio" id="audioToggle" onclick="toggleAudio()">
+                    <span>🎵</span> Sound: Off
+                </button>
+                <a href="../pages/index.html" class="btn-home">
+                    Exit Gym ✕
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <section id="mind-gym">
+        <div class="section-header">
+            <div id="engagement-tracker" class="engagement-badge" style="display: none;">
+                You've trained your mind <span id="game-count" style="margin: 0 4px;">0</span> times this week 🔥
+            </div>
+            <h2>These aren't just games.<br>They're tools your mind needs right now.</h2>
+            <p>Short, science-backed focus and calming interactions designed specifically for stressed students.</p>
+        </div>
+
+        <div class="mood-mirror">
+            <h3>How are you feeling right now?</h3>
+            <div class="mood-options">
+                <button class="mood-btn" onclick="filterGames('stress', this)">😤 Stressed</button>
+                <button class="mood-btn" onclick="filterGames('anxiety', this)">😰 Anxious</button>
+                <button class="mood-btn" onclick="filterGames('tired', this)">😴 Tired</button>
+                <button class="mood-btn" onclick="filterGames('numb', this)">😶 Numb</button>
+                <button class="mood-btn" onclick="filterGames('okay', this)">😐 Okay</button>
+            </div>
+            <p id="mood-feedback" style="margin-top: 15px; color: var(--text-light); font-size: 0.9rem; font-style: italic; display: none;"></p>
+        </div>
+
+        <div class="games-grid" id="gamesGrid">
+            
+            <!-- Game 11 (Moved to First) -->
+            <a href="../games/yodha_enchaeos.html" class="game-card" data-mood="okay tired" onclick="trackGameClick()">
+                <div class="card-visual visual-cards"></div>
+                <div class="card-content">
+                    <div class="card-meta">
+                        <span class="mood-tag">📝 For Check-in</span>
+                        <span class="time-badge">⏱ 1 min</span>
+                    </div>
+                    <h3>🃏 Yodha Cards</h3>
+                    <p>A simple daily wellness check-in survey to track your emotional journey.</p>
+                    <span class="play-btn">Begin Session</span>
+                </div>
+            </a>
+
+            <!-- Game 1 -->
+            <a href="../games/yodha_aura.html" class="game-card" data-mood="anxiety stress" onclick="trackGameClick()">
+                <div class="card-visual visual-aura"></div>
+                <div class="card-content">
+                    <div class="card-meta">
+                        <span class="mood-tag">🧘 For Anxiety</span>
+                        <span class="time-badge">⏱ 3 min</span>
+                    </div>
+                    <h3>✨ Yodha Aura</h3>
+                    <p>Direct your energy field. Gently push away stress and calm your breathing.</p>
+                    <span class="play-btn">Begin Session</span>
+                </div>
+            </a>
+
+            <!-- Game 2 -->
+            <a href="../tools/Yodhaflow.html" class="game-card" data-mood="anxiety numb okay" onclick="trackGameClick()">
+                <div class="card-visual visual-flow"></div>
+                <div class="card-content">
+                    <div class="card-meta">
+                        <span class="mood-tag">🌊 For Flow</span>
+                        <span class="time-badge">⏱ 2 min</span>
+                    </div>
+                    <h3>💧 Yodha Flow</h3>
+                    <p>Unblock mental pathways and find your rhythm before a study session.</p>
+                    <span class="play-btn">Begin Session</span>
+                </div>
+            </a>
+
+            <!-- Game 3 -->
+            <a href="../games/yodha_lumina.html" class="game-card" data-mood="stress anger" onclick="trackGameClick()">
+                <div class="card-visual visual-break"></div>
+                <div class="card-content">
+                    <div class="card-meta">
+                        <span class="mood-tag">😤 For Frustration</span>
+                        <span class="time-badge">⏱ 2 min</span>
+                    </div>
+                    <h3>🧱 Yodha Break</h3>
+                    <p>Safely smash stress walls to release pent-up tension and frustration.</p>
+                    <span class="play-btn">Begin Session</span>
+                </div>
+            </a>
+
+            <!-- Game 4 -->
+            <a href="../tools/Focusrealm.html" class="game-card" data-mood="okay numb" onclick="trackGameClick()">
+                <div class="card-visual visual-focus"></div>
+                <div class="card-content">
+                    <div class="card-meta">
+                        <span class="mood-tag">🎯 For Focus</span>
+                        <span class="time-badge">⏱ 10+ min</span>
+                    </div>
+                    <h3>⏱ Focus Realm</h3>
+                    <p>Gamified Pomodoro timer to build deep work habits and block distractions.</p>
+                    <span class="play-btn">Begin Session</span>
+                </div>
+            </a>
+
+            <!-- Game 7 -->
+            <a href="../games/yodha_mandala.html" class="game-card" data-mood="anxiety numb" onclick="trackGameClick()">
+                <div class="card-visual visual-mandala"></div>
+                <div class="card-content">
+                    <div class="card-meta">
+                        <span class="mood-tag">🌀 For Grounding</span>
+                        <span class="time-badge">⏱ 4 min</span>
+                    </div>
+                    <h3>🎨 Yodha Mandala</h3>
+                    <p>Center your racing thoughts using art, symmetry, and visual anchoring.</p>
+                    <span class="play-btn">Begin Session</span>
+                </div>
+            </a>
+
+            <!-- Game 8 -->
+            <a href="../games/yodhamatch.html" class="game-card" data-mood="tired okay" onclick="trackGameClick()">
+                <div class="card-visual visual-match"></div>
+                <div class="card-content">
+                    <div class="card-meta">
+                        <span class="mood-tag">🧩 For Brain Fog</span>
+                        <span class="time-badge">⏱ 3 min</span>
+                    </div>
+                    <h3>🃏 Yodha Match</h3>
+                    <p>Gentle memory training to clear brain fog and lightly stimulate the mind.</p>
+                    <span class="play-btn">Begin Session</span>
+                </div>
+            </a>
+
+            <!-- Game 10 -->
+            <a href="../games/untangle.html" class="game-card" data-mood="anxiety numb" onclick="trackGameClick()">
+                <div class="card-visual visual-untangle"></div>
+                <div class="card-content">
+                    <div class="card-meta">
+                        <span class="mood-tag">🧶 For Clarity</span>
+                        <span class="time-badge">⏱ 4 min</span>
+                    </div>
+                    <h3>🔗 Untangle</h3>
+                    <p>Connect lines without crossing them to slowly organize mental clutter.</p>
+                    <span class="play-btn">Begin Session</span>
+                </div>
+            </a>
+
+            <a href="../games/memory_matrix.html" class="game-card" data-mood="tired okay anxiety" onclick="trackGameClick()">
+                <div class="card-visual visual-memory"></div>
+                <div class="card-content">
+                    <div class="card-meta">
+                        <span class="mood-tag">🧠 For Memory</span>
+                        <span class="time-badge">⏱ 3 min</span>
+                    </div>
+                    <h3>🟨 Memory Matrix</h3>
+                    <p>Watch the pattern and repeat it to train short-term memory and mental focus.</p>
+                    <span class="play-btn">Begin Session</span>
+                </div>
+            </a>
+
+             <!-- Game 12 -->
+             <a href="../games/yodha_enchaeos.html" class="game-card" data-mood="tired anxiety" onclick="trackGameClick()">
+                <div class="card-visual visual-echoes"></div>
+                <div class="card-content">
+                    <div class="card-meta">
+                        <span class="mood-tag">🎧 For Distraction</span>
+                        <span class="time-badge">⏱ 5 min</span>
+                    </div>
+                    <h3>🔊 Yodha Echoes</h3>
+                    <p>Sonic therapy designed to tune out loud environments and calm the nervous system.</p>
+                    <span class="play-btn">Begin Session</span>
+                </div>
+            </a>
+
+            <!-- Coming Soon Placeholder -->
+            <div class="coming-soon-card">
+                <span>🛠️</span>
+                <h3>More Tools Brewing</h3>
+                <p style="font-size: 0.9rem;">We're working with psychology students to build more tools.</p>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Hidden dashboard stats logic (keeps original functionality without cluttering the UI too much) -->
+    <section id="dashboard" style="display: none;">
+        <div class="dashboard-grid">
+            <div class="card">
+                <h3>Your Progress</h3>
+                <p id="dashSummary" style="color:var(--text-light)"></p>
+            </div>
+            <div class="card">
+                <h3>Weekly Mood Activity</h3>
+                <div style="height:200px">
+                    <canvas id="moodChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>© 2026 YodhaMind. Built by students, for students.</p>
+    </footer>
+
+    <div class="mobile-nav">
+        <a href="../pages/index.html"><span>🏠</span>Home</a>
+        <a href="#" style="color:var(--primary)"><span>🎮</span>Mind Gym</a>
+    </div>
+
+    <script>
+        /* ================= AMBIENT AUDIO LOGIC ================= */
+        const audioEl = document.getElementById('ambient-audio');
+        const audioBtn = document.getElementById('audioToggle');
+        let isPlaying = false;
+
+        function toggleAudio() {
+            if (isPlaying) {
+                audioEl.pause();
+                audioBtn.innerHTML = '<span>🎵</span> Sound: Off';
+                audioBtn.classList.remove('playing');
+            } else {
+                audioEl.play().catch(e => console.log("Audio play blocked by browser."));
+                audioBtn.innerHTML = '<span>🔊</span> Sound: On';
+                audioBtn.classList.add('playing');
+            }
+            isPlaying = !isPlaying;
+        }
+
+        /* ================= MOOD FILTER LOGIC ================= */
+        function filterGames(mood, btn) {
+            // UI Button Active State
+            document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            const feedback = document.getElementById('mood-feedback');
+            feedback.style.display = 'block';
+
+            // Custom empathetic messages
+            const messages = {
+                'stress': "It's okay to feel overwhelmed. Try these to release the pressure.",
+                'anxiety': "Take a deep breath. These tools will help ground your racing thoughts.",
+                'tired': "Rest is productive. Try these low-energy, calming activities.",
+                'numb': "Let's gently wake up your senses with some light interaction.",
+                'okay': "Glad you're doing okay! Here are some tools to build focus and resilience."
+            };
+            feedback.innerText = messages[mood];
+
+            // Highlight Logic
+            const cards = document.querySelectorAll('.game-card');
+            cards.forEach(card => {
+                const cardMoods = card.getAttribute('data-mood');
+                if (cardMoods && cardMoods.includes(mood)) {
+                    card.classList.remove('dimmed');
+                    card.classList.add('highlighted');
+                } else {
+                    card.classList.remove('highlighted');
+                    card.classList.add('dimmed');
+                }
+            });
+            
+            // Track mood click
+            trackAction('mood_logged');
+        }
+
+        /* ================= REAL USER METRICS ================= */
+        const METRICS_KEY = 'ym_metrics';
+
+        function loadMetrics() {
+            return JSON.parse(localStorage.getItem(METRICS_KEY)) || {
+                moods: 0,
+                games: 0,
+                lastActive: null
+            };
+        }
+
+        function saveMetrics(m) {
+            localStorage.setItem(METRICS_KEY, JSON.stringify(m));
+        }
+
+        function trackAction(type) {
+            const m = loadMetrics();
+            if (type === 'mood_logged') m.moods++;
+            if (type === 'game_played') m.games++;
+            m.lastActive = new Date().toLocaleDateString();
+            saveMetrics(m);
+            renderDashboard();
+        }
+
+        function trackGameClick() {
+            trackAction('game_played');
+        }
+
+        function renderDashboard() {
+            const m = loadMetrics();
+            
+            // Top Engagement Badge update
+            const badge = document.getElementById('engagement-tracker');
+            const countSpan = document.getElementById('game-count');
+            
+            if (m.games > 0) {
+                badge.style.display = 'inline-flex';
+                countSpan.innerText = m.games;
+            }
+
+            // Original Dashboard update
+            const el = document.getElementById('dashSummary');
+            if (el) {
+                el.innerHTML = `
+                    🧠 Moods checked: <strong>${m.moods}</strong><br>
+                    🎮 Games played: <strong>${m.games}</strong><br>
+                    📅 Last active: <strong>${m.lastActive || 'Today'}</strong>
+                `;
+            }
+        }
+
+        // Init
+        renderDashboard();
+
+        // Chart setup (Kept from original to preserve functionality if dashboard is unhidden)
+        const chartCanvas = document.getElementById('moodChart');
+        if (chartCanvas) {
+            const chartCtx = chartCanvas.getContext('2d');
+            new Chart(chartCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Mon','Tue','Wed','Thu','Fri'],
+                    datasets: [{
+                        label: 'Engagement',
+                        data: Array(5).fill(0).map(() => Math.floor(Math.random()*3)+1),
+                        borderColor: '#7C5CBF',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    plugins: { legend: { display: false } },
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, ticks:{stepSize:1} } }
+                }
+            });
+        }
+    </script>
+<script src="../shared/nav-component.js"></script>
+    <script src="../shared/crisis-support.js"></script>
+</body>
+</html>
+
+

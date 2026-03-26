@@ -1,0 +1,1321 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title>YodhaMind — Self-Assessment</title>
+    <meta name="description" content="Science-backed 2-minute mental health checkups. Stress, anxiety, burnout and focus tests for college students.">
+
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;800&display=swap" rel="stylesheet">
+
+    <!-- Shared data layer -->
+    <script src="../shared/storage.js"></script>
+
+    <style>
+        /* ── Design tokens — identical to index / games / dashboard ── */
+        :root {
+            --primary:      #7C5CBF;
+            --accent:       #56CFB2;
+            --warm:         #FFF8F0;
+            --text:         #2D2D2D;
+            --soft:         #F0EBF8;
+            --text-light:   #64748b;
+            --glass-border: rgba(255,255,255,0.5);
+            --shadow-soft:  0 20px 40px rgba(0,0,0,0.05);
+            --shadow-hover: 0 30px 60px rgba(124,92,191,0.15);
+            --radius-card:  24px;
+            --radius-btn:   50px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: linear-gradient(180deg, var(--soft) 0%, var(--warm) 40%, #ffffff 100%);
+            color: var(--text);
+            overflow-x: hidden;
+            min-height: 100dvh;
+            padding-bottom: 80px;
+        }
+
+        /* ════════════════════════════════
+           NAV  — mirrors games.html exactly
+        ════════════════════════════════ */
+        nav#navbar {
+            position: fixed; top: 0; width: 100%;
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            z-index: 1000; padding: 14px 0;
+            transition: all 0.3s;
+        }
+        nav#navbar.scrolled {
+            padding: 10px 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+        .nav-container {
+            max-width: 1200px; margin: 0 auto;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 24px;
+        }
+        .logo {
+            font-size: 1.5rem; font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            text-decoration: none; display: flex; align-items: center; gap: 8px;
+        }
+        .nav-controls { display: flex; align-items: center; gap: 12px; }
+        .btn-nav {
+            background: white; border: 1px solid #ddd;
+            color: var(--text); padding: 8px 18px; border-radius: var(--radius-btn);
+            font-weight: 600; font-size: 0.88rem; cursor: pointer;
+            text-decoration: none; display: flex; align-items: center; gap: 6px;
+            transition: all 0.2s; font-family: inherit;
+        }
+        .btn-nav:hover { background: var(--text); color: white; border-color: var(--text); }
+        .btn-cta {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white; padding: 9px 22px; border-radius: var(--radius-btn);
+            text-decoration: none; font-weight: 600; font-size: 0.88rem;
+            border: none; cursor: pointer; font-family: inherit;
+            box-shadow: 0 8px 20px rgba(124,92,191,0.2);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(124,92,191,0.3);
+            color: white;
+        }
+        @media (max-width: 768px) { .nav-desktop { display: none; } }
+
+        /* ════════════════════════════════
+           PAGE WRAPPER
+        ════════════════════════════════ */
+        .page {
+            max-width: 680px; margin: 0 auto;
+            padding: 100px 20px 40px;
+        }
+
+        /* ════════════════════════════════
+           SHARED CARD BASE
+        ════════════════════════════════ */
+        .card {
+            background: white; border-radius: var(--radius-card);
+            box-shadow: var(--shadow-soft); border: 1px solid rgba(0,0,0,0.03);
+            padding: 28px;
+        }
+
+        /* ════════════════════════════════
+           SCREEN VISIBILITY UTILITY
+        ════════════════════════════════ */
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        /* ════════════════════════════════
+           VIEW 1 — HUB
+        ════════════════════════════════ */
+        .hub-header { text-align: center; margin-bottom: 36px; }
+        .hub-header h1 {
+            font-size: 2rem; font-weight: 800; line-height: 1.2;
+            color: var(--text); margin-bottom: 10px;
+        }
+        .hub-header p {
+            font-size: 0.95rem; color: var(--text-light);
+            font-weight: 500; line-height: 1.6; max-width: 500px;
+            margin: 0 auto;
+        }
+
+        /* History notice — shown when assessments exist */
+        .history-strip {
+            display: none;
+            background: var(--soft);
+            border-radius: 14px; padding: 12px 16px;
+            margin-bottom: 24px;
+            font-size: 0.83rem; font-weight: 600; color: var(--primary);
+            display: none; align-items: center; justify-content: space-between; gap: 10px;
+        }
+        .history-strip.visible { display: flex; }
+        .history-strip a {
+            font-size: 0.78rem; color: var(--primary); font-weight: 700;
+            text-decoration: underline; cursor: pointer; white-space: nowrap;
+            background: none; border: none; font-family: inherit;
+        }
+
+        /* Test cards grid */
+        .test-grid {
+            display: grid; gap: 16px;
+        }
+        .test-card {
+            background: white; border-radius: 20px;
+            border: 1.5px solid rgba(0,0,0,0.05);
+            box-shadow: var(--shadow-soft);
+            padding: 22px 24px;
+            display: flex; align-items: center; gap: 18px;
+            cursor: pointer; transition: all 0.25s;
+            text-align: left; font-family: inherit; width: 100%;
+        }
+        .test-card:hover {
+            transform: translateY(-4px); box-shadow: var(--shadow-hover);
+            border-color: var(--primary);
+        }
+        .test-icon {
+            font-size: 2rem; flex-shrink: 0;
+            width: 56px; height: 56px; border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .test-card-body { flex: 1; min-width: 0; }
+        .test-card-name { font-size: 1rem; font-weight: 800; color: var(--text); margin-bottom: 3px; }
+        .test-card-desc { font-size: 0.8rem; color: var(--text-light); font-weight: 500; line-height: 1.5; }
+        .test-card-meta {
+            display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;
+        }
+        .test-tag {
+            font-size: 0.7rem; font-weight: 700; padding: 3px 10px;
+            border-radius: 20px; background: var(--soft); color: var(--primary);
+        }
+        .test-tag.done {
+            background: rgba(86,207,178,0.15); color: #059669;
+        }
+        .test-arrow { font-size: 1.2rem; color: var(--text-light); opacity: 0.4; flex-shrink: 0; }
+
+        /* ════════════════════════════════
+           VIEW 2 — QUESTION FLOW
+        ════════════════════════════════ */
+        .q-header { margin-bottom: 24px; }
+        .q-back-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: none; border: none; cursor: pointer;
+            font-family: inherit; font-weight: 700; font-size: 0.85rem;
+            color: var(--text-light); margin-bottom: 18px;
+            padding: 0; transition: color 0.2s;
+        }
+        .q-back-btn:hover { color: var(--primary); }
+
+        .q-test-label {
+            font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em;
+            text-transform: uppercase; color: var(--primary); margin-bottom: 4px;
+        }
+        .q-test-name { font-size: 1.1rem; font-weight: 800; color: var(--text); }
+
+        /* Progress bar */
+        .progress-wrap { margin: 20px 0; }
+        .progress-track {
+            width: 100%; height: 6px;
+            background: var(--soft); border-radius: 4px; overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 4px; width: 0%;
+            transition: width 0.4s cubic-bezier(0.22,1,0.36,1);
+        }
+        .progress-label {
+            font-size: 0.75rem; font-weight: 700; color: var(--text-light);
+            margin-top: 6px; display: flex; justify-content: space-between;
+        }
+
+        /* Question card */
+        .question-card {
+            background: white; border-radius: var(--radius-card);
+            box-shadow: var(--shadow-soft); border: 1px solid rgba(0,0,0,0.03);
+            padding: 28px; margin-bottom: 16px;
+            animation: slideUp 0.3s ease both;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .q-number {
+            font-size: 0.72rem; font-weight: 700; color: var(--text-light);
+            text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px;
+        }
+        .q-text {
+            font-size: 1.05rem; font-weight: 700; color: var(--text);
+            line-height: 1.5; margin-bottom: 22px;
+        }
+        /* Context window for PSS ("In the last month…") */
+        .q-context {
+            font-size: 0.78rem; font-weight: 600; color: var(--text-light);
+            background: var(--soft); padding: 8px 14px; border-radius: 8px;
+            margin-bottom: 18px; display: inline-block;
+        }
+
+        /* Answer options */
+        .options-list { display: flex; flex-direction: column; gap: 10px; }
+        .option-btn {
+            width: 100%; padding: 14px 18px;
+            border: 1.5px solid rgba(0,0,0,0.08);
+            border-radius: 14px; background: var(--soft);
+            font-family: inherit; font-size: 0.9rem; font-weight: 600;
+            color: var(--text); cursor: pointer; text-align: left;
+            transition: all 0.18s;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .option-btn .opt-dot {
+            width: 18px; height: 18px; flex-shrink: 0;
+            border-radius: 50%; border: 2px solid rgba(0,0,0,0.15);
+            background: white; transition: all 0.18s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .option-btn:hover {
+            border-color: var(--primary); background: white;
+            box-shadow: 0 4px 14px rgba(124,92,191,0.12);
+        }
+        .option-btn.selected {
+            border-color: var(--primary); background: white;
+            box-shadow: 0 6px 20px rgba(124,92,191,0.18);
+        }
+        .option-btn.selected .opt-dot {
+            background: var(--primary); border-color: var(--primary);
+        }
+        .option-btn.selected .opt-dot::after {
+            content: '✓'; color: white; font-size: 0.65rem; font-weight: 800;
+        }
+
+        /* Nav buttons */
+        .q-nav { display: flex; gap: 12px; margin-top: 4px; }
+        .btn-prev {
+            padding: 12px 24px; border-radius: var(--radius-btn);
+            border: 1.5px solid rgba(0,0,0,0.1); background: white;
+            font-family: inherit; font-weight: 700; font-size: 0.9rem;
+            color: var(--text-light); cursor: pointer; transition: all 0.2s;
+        }
+        .btn-prev:hover { border-color: var(--primary); color: var(--primary); }
+        .btn-prev:disabled { opacity: 0.35; pointer-events: none; }
+        .btn-next {
+            flex: 1; padding: 14px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white; border: none; border-radius: var(--radius-btn);
+            font-family: inherit; font-weight: 800; font-size: 0.95rem;
+            cursor: pointer; box-shadow: 0 10px 24px rgba(124,92,191,0.25);
+            transition: opacity 0.2s, transform 0.2s;
+        }
+        .btn-next:hover   { opacity: 0.9; transform: translateY(-2px); }
+        .btn-next:disabled { opacity: 0.4; pointer-events: none; transform: none; }
+
+        /* ════════════════════════════════
+           VIEW 3 — RESULTS
+        ════════════════════════════════ */
+        .result-header {
+            text-align: center; margin-bottom: 24px;
+            animation: slideUp 0.4s ease both;
+        }
+        .result-type-label {
+            font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em;
+            text-transform: uppercase; color: var(--primary); margin-bottom: 8px;
+        }
+
+        /* Big score ring */
+        .result-ring-wrap {
+            position: relative; width: 140px; height: 140px;
+            margin: 0 auto 16px;
+        }
+        .result-ring-wrap svg { transform: rotate(-90deg); }
+        .rr-track { fill: none; stroke: var(--soft); stroke-width: 10; }
+        .rr-fill  {
+            fill: none; stroke-width: 10; stroke-linecap: round;
+            stroke-dasharray: 345;  /* 2π × 55 */
+            stroke-dashoffset: 345;
+            transition: stroke-dashoffset 1.6s cubic-bezier(0.22,1,0.36,1);
+        }
+        .result-ring-center {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+        }
+        .result-score-num {
+            font-size: 2.4rem; font-weight: 800; line-height: 1; color: var(--text);
+        }
+        .result-score-max {
+            font-size: 0.72rem; font-weight: 700; color: var(--text-light);
+            letter-spacing: 0.04em; text-transform: uppercase;
+        }
+
+        .result-severity {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 18px; border-radius: var(--radius-btn);
+            font-size: 0.88rem; font-weight: 800; margin-bottom: 8px;
+        }
+
+        /* Suggestion cards */
+        .suggestions-list { display: flex; flex-direction: column; gap: 12px; margin: 20px 0; }
+        .suggestion-item {
+            display: flex; gap: 12px; align-items: flex-start;
+            background: white; border-radius: 16px; padding: 16px;
+            box-shadow: var(--shadow-soft); border: 1px solid rgba(0,0,0,0.03);
+            animation: slideUp 0.4s ease both;
+        }
+        .suggestion-item:nth-child(2) { animation-delay: 0.07s; }
+        .suggestion-item:nth-child(3) { animation-delay: 0.14s; }
+        .sugg-icon {
+            font-size: 1.4rem; flex-shrink: 0;
+            width: 40px; height: 40px; border-radius: 12px;
+            background: var(--soft);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .sugg-text { font-size: 0.88rem; font-weight: 600; color: var(--text); line-height: 1.55; }
+        .sugg-link {
+            display: inline-block; margin-top: 5px;
+            font-size: 0.78rem; font-weight: 700; color: var(--primary);
+            text-decoration: none;
+        }
+        .sugg-link:hover { text-decoration: underline; }
+
+        /* Crisis box — shown only on high severity */
+        .crisis-box {
+            display: none;
+            background: #FEF2F2; border: 1.5px solid #FCA5A5;
+            border-radius: 16px; padding: 18px 20px; margin: 16px 0;
+        }
+        .crisis-box.visible { display: block; }
+        .crisis-box-title { font-weight: 800; font-size: 0.95rem; color: #DC2626; margin-bottom: 6px; }
+        .crisis-box p { font-size: 0.83rem; color: #7F1D1D; line-height: 1.6; }
+        .crisis-box a { color: #DC2626; font-weight: 700; text-decoration: none; }
+        .crisis-box a:hover { text-decoration: underline; }
+
+        /* Result action buttons */
+        .result-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 24px; }
+        .btn-primary {
+            width: 100%; padding: 14px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white; border: none; border-radius: var(--radius-btn);
+            font-family: inherit; font-weight: 800; font-size: 0.95rem;
+            cursor: pointer; box-shadow: 0 10px 24px rgba(124,92,191,0.25);
+            text-align: center; text-decoration: none; display: block;
+            transition: opacity 0.2s, transform 0.2s;
+        }
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-2px); color: white; }
+        .btn-secondary {
+            width: 100%; padding: 13px;
+            background: white; border: 1.5px solid rgba(0,0,0,0.1);
+            color: var(--text-light); border-radius: var(--radius-btn);
+            font-family: inherit; font-weight: 700; font-size: 0.9rem;
+            cursor: pointer; text-align: center; text-decoration: none;
+            display: block; transition: all 0.2s;
+        }
+        .btn-secondary:hover { border-color: var(--primary); color: var(--primary); }
+
+        /* ════════════════════════════════
+           HISTORY VIEW
+        ════════════════════════════════ */
+        .history-card {
+            background: white; border-radius: 16px;
+            border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: var(--shadow-soft); padding: 16px 20px;
+            display: flex; align-items: center; gap: 14px;
+            margin-bottom: 12px; cursor: pointer; transition: all 0.2s;
+        }
+        .history-card:hover { transform: translateX(4px); border-color: var(--primary); }
+        .history-sev-dot {
+            width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+        }
+        .history-type  { font-weight: 800; font-size: 0.9rem; text-transform: capitalize; }
+        .history-date  { font-size: 0.74rem; color: var(--text-light); font-weight: 600; margin-top: 2px; }
+        .history-score-badge {
+            margin-left: auto; padding: 4px 12px; border-radius: 20px;
+            font-size: 0.78rem; font-weight: 800; flex-shrink: 0;
+        }
+
+        /* ════════════════════════════════
+           MOBILE NAV — mirrors games.html
+        ════════════════════════════════ */
+        .mobile-nav {
+            display: none; position: fixed; bottom: 0; left: 0; width: 100%;
+            background: rgba(255,255,255,0.98); backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(0,0,0,0.05);
+            justify-content: space-around;
+            padding: 10px 0 max(10px, env(safe-area-inset-bottom));
+            z-index: 1000;
+        }
+        .mobile-nav a {
+            text-decoration: none; color: var(--text-light);
+            display: flex; flex-direction: column;
+            align-items: center; gap: 3px;
+            font-size: 0.68rem; font-weight: 700; min-width: 50px;
+            transition: color 0.2s;
+        }
+        .mobile-nav a.active { color: var(--primary); }
+        .mobile-nav a span  { font-size: 1.25rem; line-height: 1; }
+        @media (max-width: 768px) { .mobile-nav { display: flex; } }
+
+        /* ════════════════════════════════
+           CRISIS STRIP
+        ════════════════════════════════ */
+        .crisis-strip {
+            background: white; border-top: 1px solid rgba(0,0,0,0.05);
+            padding: 14px 20px; text-align: center;
+            font-size: 0.78rem; color: var(--text-light); font-weight: 500;
+        }
+        .crisis-strip a { color: var(--primary); font-weight: 700; text-decoration: none; }
+        .crisis-strip a:hover { text-decoration: underline; }
+
+        /* ════════════════════════════════
+           TOAST
+        ════════════════════════════════ */
+        .toast {
+            position: fixed; bottom: 76px; left: 50%;
+            transform: translateX(-50%) translateY(10px);
+            background: var(--text); color: white;
+            padding: 10px 22px; border-radius: var(--radius-btn);
+            font-size: 0.85rem; font-weight: 700;
+            z-index: 3000; opacity: 0; pointer-events: none;
+            transition: opacity 0.25s, transform 0.25s; white-space: nowrap;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    </style>
+</head>
+<body>
+
+    <!-- ═══ NAV ═══ -->
+    <nav id="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">✨ YodhaMind</a>
+            <div class="nav-controls">
+                <div class="nav-desktop" style="display:flex;gap:12px;align-items:center;">
+                    <a href="games.html"    class="btn-nav">🎮 Mind Gym</a>
+                    <a href="dashboard.html" class="btn-nav">🏠 Dashboard</a>
+                </div>
+                <a href="dashboard.html" class="btn-cta">← Back</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ═══ MAIN ═══ -->
+    <main class="page">
+
+        <!-- ─────────────────────────────────────
+             SCREEN 1: HUB — shows all 4 tests
+        ───────────────────────────────────────── -->
+        <div id="screenHub" class="screen active">
+
+            <div class="hub-header">
+                <h1>Self-Assessment<br>Tests 📋</h1>
+                <p>
+                    Science-backed. Takes under 2 minutes.
+                    Your answers feed directly into your wellness score.
+                </p>
+            </div>
+
+            <!-- History strip — shown when past results exist -->
+            <div class="history-strip" id="historyStrip">
+                <span id="historyStripText">You have past results</span>
+                <button class="card-link" onclick="showHistoryView()" style="background:none;border:none;cursor:pointer;font-family:inherit;font-size:0.78rem;font-weight:700;color:var(--primary);text-decoration:underline;">
+                    View history →
+                </button>
+            </div>
+
+            <div class="test-grid" id="testGrid">
+                <!-- Populated by JS -->
+            </div>
+
+        </div>
+
+        <!-- ─────────────────────────────────────
+             SCREEN 2: QUESTIONS
+        ───────────────────────────────────────── -->
+        <div id="screenQ" class="screen">
+
+            <div class="q-header">
+                <button class="q-back-btn" onclick="goToHub()">← Back to tests</button>
+                <div class="q-test-label" id="qTestLabel">Stress Check</div>
+                <div class="q-test-name"  id="qTestName">PSS-10</div>
+            </div>
+
+            <!-- Progress -->
+            <div class="progress-wrap">
+                <div class="progress-track">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-label">
+                    <span id="progressText">Question 1 of 10</span>
+                    <span id="progressPct">0%</span>
+                </div>
+            </div>
+
+            <!-- Question card — re-rendered each step -->
+            <div id="questionCard" class="question-card"></div>
+
+            <!-- Prev / Next -->
+            <div class="q-nav">
+                <button class="btn-prev" id="btnPrev" onclick="prevQ()">← Back</button>
+                <button class="btn-next" id="btnNext" onclick="nextQ()">Next →</button>
+            </div>
+
+        </div>
+
+        <!-- ─────────────────────────────────────
+             SCREEN 3: RESULTS
+        ───────────────────────────────────────── -->
+        <div id="screenResult" class="screen">
+
+            <div class="result-header">
+                <div class="result-type-label" id="rTypeLabel">Stress Check — Result</div>
+
+                <!-- Score ring -->
+                <div class="result-ring-wrap">
+                    <svg width="140" height="140" viewBox="0 0 140 140">
+                        <circle class="rr-track" cx="70" cy="70" r="55"/>
+                        <circle class="rr-fill"  cx="70" cy="70" r="55" id="resultRingFill"/>
+                    </svg>
+                    <div class="result-ring-center">
+                        <div class="result-score-num" id="rScoreNum">--</div>
+                        <div class="result-score-max" id="rScoreMax">/ 40</div>
+                    </div>
+                </div>
+
+                <!-- Severity badge -->
+                <div class="result-severity" id="rSeverityBadge">Low Stress 🌿</div>
+                <p style="font-size:0.83rem;color:var(--text-light);max-width:420px;margin:0 auto;line-height:1.6;" id="rSeverityDesc"></p>
+            </div>
+
+            <!-- Crisis box (only visible on high severity) -->
+            <div class="crisis-box" id="rCrisisBox">
+                <div class="crisis-box-title">⚠️ Your score suggests you need support right now</div>
+                <p>
+                    Please reach out to a counselor today.
+                    Free helplines: <a href="tel:9152987821">iCall — 9152987821</a> ·
+                    <a href="tel:18602662345">Vandrevala — 1860-2662-345</a>
+                </p>
+            </div>
+
+            <!-- Personalised suggestions -->
+            <div class="suggestions-list" id="rSuggestions"></div>
+
+            <!-- Action buttons -->
+            <div class="result-actions">
+                <a href="dashboard.html" class="btn-primary">← Back to Dashboard</a>
+                <button class="btn-secondary" onclick="retakeTest()">Retake this test</button>
+                <button class="btn-secondary" onclick="goToHub()">Try a different test</button>
+            </div>
+
+        </div>
+
+        <!-- ─────────────────────────────────────
+             SCREEN 4: HISTORY
+        ───────────────────────────────────────── -->
+        <div id="screenHistory" class="screen">
+            <button class="q-back-btn" onclick="goToHub()">← Back to tests</button>
+            <h2 style="font-size:1.3rem;font-weight:800;margin-bottom:20px;">Your Assessment History</h2>
+            <div id="historyList"></div>
+        </div>
+
+    </main>
+
+    <!-- CRISIS STRIP -->
+    <div class="crisis-strip">
+        Need help now? &nbsp;
+        <a href="tel:9152987821">iCall: 9152987821</a> &nbsp;·&nbsp;
+        <a href="tel:18602662345">Vandrevala: 1860-2662-345</a>
+    </div>
+
+    <!-- MOBILE NAV -->
+    <nav class="mobile-nav">
+        <a href="dashboard.html"><span>🏠</span>Home</a>
+        <a href="games.html"><span>🎮</span>Games</a>
+        <a href="assessment.html" class="active"><span>📋</span>Assess</a>
+        <a href="psychologist.html"><span>💬</span>Support</a>
+        <a href="dashboard.html" onclick="/* journal */"><span>📝</span>Journal</a>
+    </nav>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast"></div>
+
+
+    <!-- ═══════════════════════════════════════════
+         JAVASCRIPT
+    ═══════════════════════════════════════════ -->
+    <script>
+    'use strict';
+
+    /* ─────────────────────────────────────────────
+       ASSESSMENT DATA
+       Each test: id, name, context, options, questions[], reverse[]
+       Scoring: sum(reverse ? maxVal-ans : ans), then interpret()
+    ───────────────────────────────────────────── */
+    const TESTS = {
+
+        stress: {
+            id:      'stress',
+            emoji:   '😤',
+            name:    'Stress Check',
+            label:   'PSS-10 (Perceived Stress Scale)',
+            desc:    'Measures how stressed and overwhelmed you feel in daily life.',
+            time:    '2 min',
+            color:   '#F59E0B',
+            context: 'In the last month, how often have you…',
+            options: ['Never', 'Almost Never', 'Sometimes', 'Fairly Often', 'Very Often'],
+            questions: [
+                'Been upset because of something that happened unexpectedly?',
+                'Felt that you were unable to control the important things in your life?',
+                'Felt nervous and stressed?',
+                'Felt confident about your ability to handle personal problems?',
+                'Felt that things were going your way?',
+                'Found that you could not cope with all the things you had to do?',
+                'Been able to control irritations in your life?',
+                'Felt that you were on top of things?',
+                'Been angered because of things that were outside of your control?',
+                'Felt difficulties were piling up so high that you could not overcome them?'
+            ],
+            // true = reverse-scored (positive items)
+            reverse: [false, false, false, true, true, false, true, true, false, false],
+            maxScore: 40,
+            interpret(raw) {
+                const risk = Math.round((raw / 40) * 100);
+                if (raw <= 13) return {
+                    severity: 'Low Stress 🌿',
+                    color:    '#059669',
+                    bgColor:  'rgba(5,150,105,0.1)',
+                    desc:     'Your stress levels are within a healthy range. Keep up your current habits.',
+                    crisis:   false,
+                    suggestions: [
+                        { icon: '🪷', text: 'Keep up your great habits! Try Mandala to maintain your calm.', link: 'yodha_mandala.html', linkText: 'Play Mandala →' },
+                        { icon: '📝', text: 'Log your mood daily to track positive trends over time.', link: 'dashboard.html', linkText: 'Go to Dashboard →' },
+                        { icon: '🎯', text: 'Challenge yourself with Enchaeos to build mental resilience.', link: 'yodha_enchaeos.html', linkText: 'Play Enchaeos →' }
+                    ]
+                };
+                if (raw <= 26) return {
+                    severity: 'Moderate Stress ⚠️',
+                    color:    '#D97706',
+                    bgColor:  'rgba(217,119,6,0.1)',
+                    desc:     'You\'re experiencing noticeable stress. A few targeted tools can help significantly.',
+                    crisis:   false,
+                    suggestions: [
+                        { icon: '🌬️', text: 'Try 5 minutes of guided breathing daily. It directly lowers cortisol.', link: 'Yodhaflow.html', linkText: 'Open Yodha Flow →' },
+                        { icon: '⏱️', text: 'Use the Pomodoro timer to break study into manageable chunks.', link: 'Focusrealm.html', linkText: 'Open Focus Realm →' },
+                        { icon: '📖', text: 'Journal your stress triggers — writing them down reduces their power.', link: 'dashboard.html', linkText: 'Write in Journal →' }
+                    ]
+                };
+                return {
+                    severity: 'High Stress 🚨',
+                    color:    '#DC2626',
+                    bgColor:  'rgba(220,38,38,0.1)',
+                    desc:     'Your stress levels are high. We strongly recommend talking to a counselor.',
+                    suggestions: [
+                        { icon: '💬', text: 'Counselor network starting soon. This will be your most important step.', link: '#', linkText: 'Coming Soon' },
+                        { icon: '🌬️', text: 'Start right now — open Yodha Flow and do one breathing round.', link: 'Yodhaflow.html', linkText: 'Breathe Now →' },
+                        { icon: '🪷', text: 'Mandala drawing is proven to reduce acute stress. Try 5 minutes.', link: 'yodha_mandala.html', linkText: 'Open Mandala →' }
+                    ]
+                };
+            }
+        },
+
+        anxiety: {
+            id:      'anxiety',
+            emoji:   '😟',
+            name:    'Anxiety Check',
+            label:   'GAD-7 (Generalised Anxiety Disorder)',
+            desc:    'Identifies anxiety symptoms and how much they affect your daily life.',
+            time:    '1 min',
+            color:   '#8B5CF6',
+            context: 'Over the last 2 weeks, how often have you been bothered by…',
+            options: ['Not at all', 'Several days', 'More than half the days', 'Nearly every day'],
+            questions: [
+                'Feeling nervous, anxious, or on edge?',
+                'Not being able to stop or control worrying?',
+                'Worrying too much about different things?',
+                'Trouble relaxing?',
+                'Being so restless that it is hard to sit still?',
+                'Becoming easily annoyed or irritable?',
+                'Feeling afraid, as if something awful might happen?'
+            ],
+            reverse:  [false, false, false, false, false, false, false],
+            maxScore: 21,
+            interpret(raw) {
+                const risk = Math.round((raw / 21) * 100);
+                if (raw <= 4) return {
+                    severity: 'Minimal Anxiety 🌿',
+                    color:    '#059669',
+                    bgColor:  'rgba(5,150,105,0.1)',
+                    desc:     'Your anxiety levels look healthy. You\'re managing well.',
+                    crisis:   false,
+                    suggestions: [
+                        { icon: '🌀', text: 'Aura helps maintain a calm, focused mind. Play it daily.', link: 'yodha_aura.html', linkText: 'Play Aura →' },
+                        { icon: '💡', text: 'Lumina sharpens your pattern recognition — great for keeping anxiety low.', link: 'yodha_lumina.html', linkText: 'Play Lumina →' },
+                        { icon: '📋', text: 'Reassess monthly to track your mental wellbeing over time.', link: 'assessment.html', linkText: 'Schedule reminder →' }
+                    ]
+                };
+                if (raw <= 9) return {
+                    severity: 'Mild Anxiety 💛',
+                    color:    '#D97706',
+                    bgColor:  'rgba(217,119,6,0.1)',
+                    desc:     'Mild anxiety is common. Targeted daily habits can reduce it significantly.',
+                    crisis:   false,
+                    suggestions: [
+                        { icon: '🌬️', text: 'Practice 4-7-8 breathing daily. It activates the parasympathetic system.', link: 'Yodhaflow.html', linkText: 'Try Yodha Flow →' },
+                        { icon: '📱', text: 'Reduce social media browsing — limit to 20 minutes per day.', link: null, linkText: null },
+                        { icon: '🃏', text: 'Yodha Match gently redirects racing thoughts through focused memory work.', link: 'yodhamatch.html', linkText: 'Play Yodha Match →' }
+                    ]
+                };
+                if (raw <= 14) return {
+                    severity: 'Moderate Anxiety ⚠️',
+                    color:    '#EA580C',
+                    bgColor:  'rgba(234,88,12,0.1)',
+                    desc:     'Moderate anxiety needs active attention. Please consider speaking with a professional.',
+                    suggestions: [
+                        { icon: '💬', text: 'Our counselor network is coming soon to help you develop strategies.', link: '#', linkText: 'Coming Soon' },
+                        { icon: '🌬️', text: 'Use Yodha Flow morning and night — consistency is key at this level.', link: 'Yodhaflow.html', linkText: 'Open Yodha Flow →' },
+                        { icon: '📖', text: 'Journal your anxiety triggers. Naming them reduces their emotional charge.', link: 'dashboard.html', linkText: 'Open Journal →' }
+                    ]
+                };
+                return {
+                    severity: 'Severe Anxiety 🚨',
+                    color:    '#DC2626',
+                    bgColor:  'rgba(220,38,38,0.1)',
+                    desc:     'Your anxiety score is high. Please reach out for support — you don\'t have to manage this alone.',
+                    suggestions: [
+                        { icon: '💬', text: 'Our counselor network is coming soon. Please use a helpline today.', link: '#', linkText: 'Coming Soon' },
+                        { icon: '🌬️', text: 'Open Yodha Flow right now and complete one full breathing session.', link: 'Yodhaflow.html', linkText: 'Breathe Now →' },
+                        { icon: '🪷', text: 'Mandala drawing has been shown to reduce acute anxiety within minutes.', link: 'yodha_mandala.html', linkText: 'Open Mandala →' }
+                    ]
+                };
+            }
+        },
+
+        burnout: {
+            id:      'burnout',
+            emoji:   '😩',
+            name:    'Burnout Check',
+            label:   'MBI-SS (Maslach Burnout Inventory)',
+            desc:    'Checks for academic burnout — exhaustion, cynicism, and efficacy loss.',
+            time:    '2 min',
+            color:   '#DC2626',
+            context: 'How often do you experience the following?',
+            options: ['Never', 'A few times a year', 'Once a month', 'A few times a month', 'Once a week', 'A few times a week', 'Every day'],
+            questions: [
+                'I feel emotionally drained by my studies.',
+                'I feel burned out from my studies.',
+                'I feel tired when I get up in the morning and have to face another day at university.',
+                'Studying or attending class is really a strain for me.',
+                'I doubt the significance of my studies.',
+                'I have become less enthusiastic about my studies.',
+                'I feel effective and competent in my studies.',
+                'I feel exhilarated when I accomplish something in my studies.'
+            ],
+            reverse:  [false, false, false, false, false, false, true, true],
+            maxScore: 42,
+            interpret(raw) {
+                const risk = Math.round((raw / 42) * 100);
+                if (raw <= 14) return {
+                    severity: 'No Burnout 🌟',
+                    color:    '#059669',
+                    bgColor:  'rgba(5,150,105,0.1)',
+                    desc:     'You\'re energised and engaged with your studies. Keep this up!',
+                    crisis:   false,
+                    suggestions: [
+                        { icon: '🎮', text: 'Keep using Mind Gym games to maintain your mental sharpness.', link: 'games.html', linkText: 'Open Mind Gym →' },
+                        { icon: '⏱️', text: 'Pomodoro sessions will help you sustain this energy long-term.', link: 'Focusrealm.html', linkText: 'Open Focus Realm →' },
+                        { icon: '📖', text: 'Reflect weekly in your journal to stay aware of energy shifts.', link: 'dashboard.html', linkText: 'Open Journal →' }
+                    ]
+                };
+                if (raw <= 28) return {
+                    severity: 'Early Burnout 💛',
+                    color:    '#D97706',
+                    bgColor:  'rgba(217,119,6,0.1)',
+                    desc:     'Early signs of burnout detected. Address this now before it deepens.',
+                    crisis:   false,
+                    suggestions: [
+                        { icon: '⏸️', text: 'Schedule a mandatory non-study hour each day. Rest is productive.', link: null, linkText: null },
+                        { icon: '⏱️', text: 'Strict Pomodoro sessions prevent overwork — use 25/5 splits.', link: 'Focusrealm.html', linkText: 'Open Focus Realm →' },
+                        { icon: '💬', text: 'Talk to someone — a counselor or trusted friend — about your workload.', link: '#', linkText: 'Coming Soon' }
+                    ]
+                };
+                return {
+                    severity: 'Burnout Detected 🔴',
+                    color:    '#DC2626',
+                    bgColor:  'rgba(220,38,38,0.1)',
+                    desc:     'You are experiencing significant burnout. This needs urgent attention.',
+                    crisis:   true,
+                    suggestions: [
+                        { icon: '💬', text: 'Please speak to a counselor urgently. Burnout worsens without intervention.', link: '#', linkText: 'Coming Soon' },
+                        { icon: '📅', text: 'Take a mandatory rest day this week. Block it in your calendar now.', link: null, linkText: null },
+                        { icon: '🌬️', text: 'Start each morning with one Yodha Flow breathing session.', link: 'Yodhaflow.html', linkText: 'Open Yodha Flow →' }
+                    ]
+                };
+            }
+        },
+
+        focus: {
+            id:      'focus',
+            emoji:   '🎯',
+            name:    'Focus Assessment',
+            label:   'YodhaMind Custom Scale',
+            desc:    'Measures your ability to concentrate during study sessions.',
+            time:    '1 min',
+            color:   '#0891B2',
+            context: 'How often do the following happen during your study time?',
+            options: ['Never', 'Rarely', 'Sometimes', 'Often', 'Always'],
+            questions: [
+                'I find it hard to concentrate for more than 20 minutes.',
+                'My mind wanders during lectures or study sessions.',
+                'I struggle to start tasks even when I know I should.',
+                'Phone or noise distractions frequently break my focus.',
+                'I forget information shortly after studying it.',
+                'I feel mentally sharp and clear while studying.',
+                'I can complete a full study session without losing focus.'
+            ],
+            reverse:  [false, false, false, false, false, true, true],
+            maxScore: 24,
+            interpret(raw) {
+                const risk = Math.round((raw / 24) * 100);
+                if (raw <= 8) return {
+                    severity: 'Sharp Focus 🎯',
+                    color:    '#059669',
+                    bgColor:  'rgba(5,150,105,0.1)',
+                    desc:     'Excellent focus capacity. You\'re in a strong cognitive state.',
+                    crisis:   false,
+                    suggestions: [
+                        { icon: '⚡', text: 'Enchaeos can push your reaction speed even further.', link: 'yodha_enchaeos.html', linkText: 'Play Enchaeos →' },
+                        { icon: '💡', text: 'Lumina challenges your pattern recognition at harder levels.', link: 'yodha_lumina.html', linkText: 'Play Lumina →' },
+                        { icon: '⏱️', text: 'Use Focus Realm to document your peak study hours.', link: 'Focusrealm.html', linkText: 'Open Focus Realm →' }
+                    ]
+                };
+                if (raw <= 16) return {
+                    severity: 'Moderate Focus 💛',
+                    color:    '#D97706',
+                    bgColor:  'rgba(217,119,6,0.1)',
+                    desc:     'Your focus is functional but improvable. Small habits make a big difference.',
+                    crisis:   false,
+                    suggestions: [
+                        { icon: '⏱️', text: 'Use strict Pomodoro — 25 min focus, 5 min break. No exceptions.', link: 'Focusrealm.html', linkText: 'Open Focus Realm →' },
+                        { icon: '📵', text: 'Put your phone in another room during study sessions.', link: null, linkText: null },
+                        { icon: '🌀', text: 'Aura builds sustained attention — play it before studying.', link: 'yodha_aura.html', linkText: 'Play Aura →' }
+                    ]
+                };
+                return {
+                    severity: 'Low Focus ⚠️',
+                    color:    '#EA580C',
+                    bgColor:  'rgba(234,88,12,0.1)',
+                    desc:     'Your focus is significantly impacted. Let\'s work on this together.',
+                    crisis:   false,
+                    suggestions: [
+                        { icon: '⏱️', text: 'Start with 5-minute study sprints only. Build up gradually.', link: 'Focusrealm.html', linkText: 'Open Focus Realm →' },
+                        { icon: '🪷', text: 'Mandala drawing improves sustained attention through meditative practice.', link: 'yodha_mandala.html', linkText: 'Open Mandala →' },
+                        { icon: '💬', text: 'Chronic focus issues may signal anxiety or burnout — consider talking to a counselor.', link: 'psychologist.html', linkText: 'Book Session →' }
+                    ]
+                };
+            }
+        },
+
+        depression: {
+            id:      'depression',
+            emoji:   '🌧️',
+            name:    'Mood Check',
+            label:   'PHQ-9 (Depression Screener)',
+            desc:    'Standard clinical screening for symptoms of depression and low mood.',
+            time:    '2 min',
+            color:   '#3B82F6',
+            context: 'Over the last 2 weeks, how often have you been bothered by…',
+            options: ['Not at all', 'Several days', 'More than half the days', 'Nearly every day'],
+            questions: [
+                'Little interest or pleasure in doing things?',
+                'Feeling down, depressed, or hopeless?',
+                'Trouble falling or staying asleep, or sleeping too much?',
+                'Feeling tired or having little energy?',
+                'Poor appetite or overeating?',
+                'Feeling bad about yourself, feeling that you are a failure, or letting your family down?',
+                'Trouble concentrating on things, such as studying, reading or watching television?',
+                'Moving or speaking so slowly that other people could have noticed? Or the opposite—being so fidgety or restless that you have been moving around a lot more than usual?',
+                'Thoughts that you would be better off dead, or of hurting yourself in some way?'
+            ],
+            // 0, 1, 2, 3
+            reverse:  [false, false, false, false, false, false, false, false, false],
+            maxScore: 27,
+            interpret(raw) {
+                const risk = Math.round((raw / 27) * 100);
+                if (raw <= 4) return {
+                    severity: 'Minimal 🌿',
+                    color:    '#059669',
+                    bgColor:  'rgba(5,150,105,0.1)',
+                    desc:     'Your mood seems stable and healthy right now.',
+                    crisis:   false,
+                    suggestions: [
+                        { icon: '📝', text: 'Keep using your journal to maintain self-awareness.', link: 'dashboard.html', linkText: 'Open Journal →' },
+                        { icon: '🌀', text: 'Play Aura occasionally to keep your mind centered.', link: 'yodha_aura.html', linkText: 'Play Aura →' }
+                    ]
+                };
+                if (raw <= 9) return {
+                    severity: 'Mild Low Mood 💛',
+                    color:    '#D97706',
+                    bgColor:  'rgba(217,119,6,0.1)',
+                    desc:     'You are experiencing some mild depressive symptoms. Building small, consistent habits helps.',
+                    crisis:   false,
+                    suggestions: [
+                        { icon: '🚶‍♀️', text: 'Try to get 15 minutes of sunlight and gentle movement today.', link: null, linkText: null },
+                        { icon: '💬', text: 'Reach out to the anonymous community — you are not alone in feeling this way.', link: 'community.html', linkText: 'Open Community →' },
+                        { icon: '🧘', text: 'Use Yodha Flow for basic emotional grounding.', link: '../tools/Yodhaflow.html', linkText: 'Try Breathing →' }
+                    ]
+                };
+                if (raw <= 14) return {
+                    severity: 'Moderate ⚠️',
+                    color:    '#EA580C',
+                    bgColor:  'rgba(234,88,12,0.1)',
+                    desc:     'Moderate depressive symptoms detected. It is highly recommended to talk to a professional.',
+                    crisis:   false,
+                    suggestions: [
+                        { icon: '🏥', text: 'Please book a session with one of our verified counselors.', link: '#', linkText: 'Coming Soon' },
+                        { icon: '📓', text: 'Write down one small, achievable goal per day in your journal.', link: 'dashboard.html', linkText: 'Open Journal →' },
+                        { icon: '🫂', text: 'Tell one trusted friend or family member how you have been feeling.', link: null, linkText: null }
+                    ]
+                };
+                return {
+                    severity: 'Severe 🚨',
+                    color:    '#DC2626',
+                    bgColor:  'rgba(220,38,38,0.1)',
+                    desc:     'Your score indicates severe depressive symptoms. Please, do not carry this alone — help is available right now.',
+                    crisis:   true,
+                    suggestions: [
+                        { icon: '🆘', text: 'If you are having thoughts of self-harm, call the crisis line immediately.', link: 'tel:9152987821', linkText: 'Call iCall (9152987821)' },
+                        { icon: '👩‍⚕️', text: 'Connect with a clinical psychologist today. It is the strongest step you can take.', link: '#', linkText: 'Coming Soon' },
+                        { icon: '🫂', text: 'Please reach out to someone near you — a warden, a friend, or family.', link: null, linkText: null }
+                    ]
+                };
+            }
+        }
+    };
+
+    /* ─────────────────────────────────────────────
+       STATE
+    ───────────────────────────────────────────── */
+    let activeTest   = null;   // TESTS[key]
+    let responses    = [];     // answers indexed by question
+    let currentQ     = 0;      // current question index
+    let lastResult   = null;   // result object from interpret()
+
+    /* ─────────────────────────────────────────────
+       NAV SHADOW
+    ───────────────────────────────────────────── */
+    window.addEventListener('scroll', () => {
+        document.getElementById('navbar')
+            .classList.toggle('scrolled', window.scrollY > 10);
+    }, { passive: true });
+
+    /* ─────────────────────────────────────────────
+       SCREEN SWITCHER
+    ───────────────────────────────────────────── */
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    /* ─────────────────────────────────────────────
+       HUB — render test cards
+    ───────────────────────────────────────────── */
+    function renderHub() {
+        const grid       = document.getElementById('testGrid');
+        const allResults = YM.getAssessments();
+
+        // History strip
+        if (allResults.length) {
+            const strip = document.getElementById('historyStrip');
+            strip.classList.add('visible');
+            document.getElementById('historyStripText').textContent =
+                `You have ${allResults.length} past result${allResults.length > 1 ? 's' : ''}`;
+        }
+
+        grid.innerHTML = Object.values(TESTS).map(t => {
+            const last = YM.getLatestAssessment(t.id);
+            const doneBadge = last
+                ? `<span class="test-tag done">✓ Last: ${last.severity.split(' ')[0]}</span>`
+                : '';
+            return `
+                <button class="test-card" onclick="startTest('${t.id}')">
+                    <div class="test-icon" style="background:${t.color}22;">
+                        ${t.emoji}
+                    </div>
+                    <div class="test-card-body">
+                        <div class="test-card-name">${t.name}</div>
+                        <div class="test-card-desc">${t.desc}</div>
+                        <div class="test-card-meta">
+                            <span class="test-tag">⏱ ${t.time}</span>
+                            <span class="test-tag">${t.questions.length} questions</span>
+                            ${doneBadge}
+                        </div>
+                    </div>
+                    <span class="test-arrow">›</span>
+                </button>
+            `;
+        }).join('');
+    }
+
+    function goToHub() {
+        showScreen('screenHub');
+    }
+
+    /* ─────────────────────────────────────────────
+       START A TEST
+    ───────────────────────────────────────────── */
+    function startTest(testId) {
+        activeTest = TESTS[testId];
+        if (!activeTest) return;
+        responses  = new Array(activeTest.questions.length).fill(null);
+        currentQ   = 0;
+
+        // Update header labels
+        document.getElementById('qTestLabel').textContent = activeTest.name;
+        document.getElementById('qTestName').textContent  = activeTest.label;
+
+        renderQuestion();
+        showScreen('screenQ');
+    }
+
+    /* ─────────────────────────────────────────────
+       RENDER QUESTION
+    ───────────────────────────────────────────── */
+    function renderQuestion() {
+        const t     = activeTest;
+        const total = t.questions.length;
+        const pct   = Math.round((currentQ / total) * 100);
+
+        // Progress bar
+        document.getElementById('progressFill').style.width = pct + '%';
+        document.getElementById('progressText').textContent =
+            `Question ${currentQ + 1} of ${total}`;
+        document.getElementById('progressPct').textContent  = pct + '%';
+
+        // Prev/Next state
+        document.getElementById('btnPrev').disabled =  (currentQ === 0);
+        const isLast = currentQ === total - 1;
+        document.getElementById('btnNext').textContent = isLast ? 'See Results ✓' : 'Next →';
+        // Disable next until answered
+        document.getElementById('btnNext').disabled = (responses[currentQ] === null);
+
+        // Build card HTML
+        const qText   = t.questions[currentQ];
+        const selIdx  = responses[currentQ];
+
+        document.getElementById('questionCard').innerHTML = `
+            <div class="q-number">Question ${currentQ + 1} of ${total}</div>
+            ${t.context ? `<div class="q-context">📅 ${t.context}</div>` : ''}
+            <div class="q-text">${qText}</div>
+            <div class="options-list">
+                ${t.options.map((opt, i) => `
+                    <button
+                        class="option-btn ${selIdx === i ? 'selected' : ''}"
+                        onclick="selectOption(${i})"
+                    >
+                        <span class="opt-dot"></span>
+                        ${opt}
+                    </button>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    /* ─────────────────────────────────────────────
+       SELECT OPTION
+    ───────────────────────────────────────────── */
+    function selectOption(index) {
+        responses[currentQ] = index;
+
+        // Visually update without full re-render (faster feel)
+        document.querySelectorAll('.option-btn').forEach((btn, i) => {
+            btn.classList.toggle('selected', i === index);
+        });
+
+        // Enable next
+        document.getElementById('btnNext').disabled = false;
+
+        // Auto-advance after short pause (feels natural on mobile)
+        const isLast = currentQ === activeTest.questions.length - 1;
+        if (!isLast) {
+            setTimeout(() => nextQ(), 380);
+        }
+    }
+
+    /* ─────────────────────────────────────────────
+       PREV / NEXT
+    ───────────────────────────────────────────── */
+    function prevQ() {
+        if (currentQ > 0) {
+            currentQ--;
+            renderQuestion();
+        }
+    }
+
+    function nextQ() {
+        if (responses[currentQ] === null) {
+            showToast('Please select an answer first');
+            return;
+        }
+        const isLast = currentQ === activeTest.questions.length - 1;
+        if (isLast) {
+            computeAndShowResult();
+        } else {
+            currentQ++;
+            renderQuestion();
+        }
+    }
+
+    /* ─────────────────────────────────────────────
+       COMPUTE + SHOW RESULT
+    ───────────────────────────────────────────── */
+    function computeAndShowResult() {
+        const t = activeTest;
+
+        // Score: sum of (reverse ? maxIdx - answer : answer)
+        const maxOptIdx = t.options.length - 1;
+        let raw = 0;
+        responses.forEach((r, i) => {
+            if (r === null) return;
+            raw += t.reverse[i] ? (maxOptIdx - r) : r;
+        });
+
+        const result = t.interpret(raw);
+        lastResult   = { raw, result };
+
+        // Save to YM storage — feeds wellness score immediately
+        YM.saveAssessment(
+            t.id,
+            raw,
+            Math.round((raw / t.maxScore) * 100),   // risk 0-100
+            result.severity,
+            result.suggestions.map(s => s.text)
+        );
+
+        renderResult(raw, result);
+        showScreen('screenResult');
+        showToast('Assessment saved ✓');
+    }
+
+    /* ─────────────────────────────────────────────
+       RENDER RESULT SCREEN
+    ───────────────────────────────────────────── */
+    function renderResult(raw, result) {
+        const t = activeTest;
+
+        // Type label
+        document.getElementById('rTypeLabel').textContent =
+            `${t.name} — Result`;
+
+        // Score ring  (circumference = 2π × 55 ≈ 345)
+        const CIRC   = 345;
+        const pct    = raw / t.maxScore;
+        const offset = CIRC - pct * CIRC;
+        const ring   = document.getElementById('resultRingFill');
+        ring.style.stroke = result.color;
+        setTimeout(() => {
+            ring.style.strokeDashoffset = offset;
+        }, 150);
+
+        // Score number (animated counter)
+        animateCounter('rScoreNum', raw, 1000);
+        document.getElementById('rScoreMax').textContent = `/ ${t.maxScore}`;
+
+        // Severity badge
+        const badge = document.getElementById('rSeverityBadge');
+        badge.textContent        = result.severity;
+        badge.style.background   = result.bgColor;
+        badge.style.color        = result.color;
+
+        // Severity description
+        document.getElementById('rSeverityDesc').textContent = result.desc;
+
+        // Crisis box
+        const crisisBox = document.getElementById('rCrisisBox');
+        crisisBox.classList.toggle('visible', result.crisis);
+
+        // Suggestions
+        document.getElementById('rSuggestions').innerHTML = result.suggestions.map(s => `
+            <div class="suggestion-item">
+                <div class="sugg-icon">${s.icon}</div>
+                <div class="sugg-text">
+                    ${s.text}
+                    ${s.link ? `<br><a href="${s.link}" class="sugg-link">${s.linkText}</a>` : ''}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    /* ─────────────────────────────────────────────
+       RETAKE
+    ───────────────────────────────────────────── */
+    function retakeTest() {
+        if (activeTest) startTest(activeTest.id);
+    }
+
+    /* ─────────────────────────────────────────────
+       HISTORY SCREEN
+    ───────────────────────────────────────────── */
+    function showHistoryView() {
+        const all  = YM.getAssessments();
+        const list = document.getElementById('historyList');
+
+        if (!all.length) {
+            list.innerHTML = '<p style="color:var(--text-light);font-size:0.88rem;">No assessments yet.</p>';
+        } else {
+            list.innerHTML = all.map(a => {
+                const t    = TESTS[a.type] || {};
+                const date = new Date(a.ts).toLocaleDateString('en-IN', {
+                    day: 'numeric', month: 'short', year: 'numeric'
+                });
+                // Pick color based on risk
+                const color = a.risk >= 70 ? '#DC2626' : a.risk >= 45 ? '#D97706' : '#059669';
+                return `
+                    <div class="history-card" onclick="startTest('${a.type}')">
+                        <div class="history-sev-dot" style="background:${color};"></div>
+                        <div>
+                            <div class="history-type">${t.name || a.type}</div>
+                            <div class="history-date">${date}</div>
+                        </div>
+                        <div class="history-score-badge"
+                             style="background:${color}18;color:${color};">
+                            ${a.severity ? a.severity.split(' ')[0] : a.risk + ' risk'}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        showScreen('screenHistory');
+    }
+
+    /* ─────────────────────────────────────────────
+       ANIMATED COUNTER
+    ───────────────────────────────────────────── */
+    function animateCounter(elId, target, duration) {
+        const el    = document.getElementById(elId);
+        const start = performance.now();
+        (function tick(now) {
+            const p = Math.min((now - start) / duration, 1);
+            el.textContent = Math.round(p * target);
+            if (p < 1) requestAnimationFrame(tick);
+        })(start);
+    }
+
+    /* ─────────────────────────────────────────────
+       TOAST
+    ───────────────────────────────────────────── */
+    let toastTimer = null;
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+    }
+
+    /* ─────────────────────────────────────────────
+       INIT — check URL param on load
+    ───────────────────────────────────────────── */
+    document.addEventListener('DOMContentLoaded', () => {
+        renderHub();
+
+        // If URL has ?type=stress etc → jump straight into that test
+        const params = new URLSearchParams(window.location.search);
+        const type   = params.get('type');
+        if (type && TESTS[type]) {
+            startTest(type);
+        }
+    });
+    </script>
+
+<script src="../shared/nav-component.js"></script>
+    <script src="../shared/crisis-support.js"></script>
+</body>
+</html>
+
+
+

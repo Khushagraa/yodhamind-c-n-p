@@ -1,0 +1,651 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Yodha Mandala - Zen Studio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #050508;
+            --panel: rgba(15, 15, 20, 0.85);
+            --border: rgba(255, 255, 255, 0.1);
+            --accent: #d946ef;
+            --breath-color: #818cf8;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; user-select: none; }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Outfit', sans-serif;
+            overflow: hidden;
+            height: 100vh; 
+            height: 100dvh; /* iOS Safari Viewport Fix */
+        }
+
+        /* Canvas Wrapper */
+        #canvas-wrapper {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        canvas {
+            display: block;
+            cursor: crosshair;
+            transition: transform 0.5s ease;
+        }
+        
+        .spinning { animation: rotateCanvas 60s linear infinite; }
+        @keyframes rotateCanvas { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        /* --- Breathing Engine --- */
+        .breath-overlay {
+            position: absolute; top: 50%; left: 50%; 
+            transform: translate(-50%, -50%);
+            width: 300px; height: 300px;
+            pointer-events: none; z-index: 5;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.8s ease, all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .breath-overlay.active { opacity: 1; }
+
+        /* Corner mode when drawing */
+        .breath-overlay.corner-mode {
+            top: auto;
+            bottom: max(90px, env(safe-area-inset-bottom) + 90px);
+            left: max(20px, env(safe-area-inset-left) + 20px);
+            transform: scale(0.35);
+            transform-origin: bottom left;
+        }
+
+        .breath-ring {
+            position: absolute;
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 30px rgba(129, 140, 248, 0.1);
+            animation: ringExpand 8s ease-in-out infinite;
+        }
+
+        .breath-core {
+            position: absolute;
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: var(--breath-color);
+            box-shadow: 0 0 20px var(--breath-color);
+            opacity: 0.8;
+            animation: corePulse 8s ease-in-out infinite;
+        }
+
+        .breath-label {
+            position: absolute;
+            font-size: 1rem; letter-spacing: 3px; text-transform: uppercase;
+            color: rgba(255,255,255,0.8);
+            text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+            font-weight: 300;
+        }
+        
+        .label-in { animation: fadeInOut 8s ease-in-out infinite; }
+        .label-out { animation: fadeOutIn 8s ease-in-out infinite; }
+
+        @keyframes ringExpand {
+            0% { width: 80px; height: 80px; border-color: rgba(255,255,255,0.1); box-shadow: 0 0 20px rgba(129, 140, 248, 0.1); }
+            50% { width: 280px; height: 280px; border-color: var(--breath-color); box-shadow: 0 0 60px var(--breath-color); }
+            100% { width: 80px; height: 80px; border-color: rgba(255,255,255,0.1); box-shadow: 0 0 20px rgba(129, 140, 248, 0.1); }
+        }
+
+        @keyframes corePulse {
+            0% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.5); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.5; }
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(10px); }
+            15% { opacity: 1; transform: translateY(0); }
+            40% { opacity: 1; transform: translateY(0); }
+            50% { opacity: 0; transform: translateY(-10px); }
+            100% { opacity: 0; }
+        }
+
+        @keyframes fadeOutIn {
+            0% { opacity: 0; }
+            50% { opacity: 0; transform: translateY(10px); }
+            65% { opacity: 1; transform: translateY(0); }
+            90% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-10px); }
+        }
+
+        /* Toast Notifications */
+        .toast {
+            position: fixed; top: max(100px, env(safe-area-inset-top) + 80px); 
+            left: 50%; transform: translateX(-50%);
+            background: rgba(20, 20, 25, 0.95); color: white; padding: 12px 24px;
+            border-radius: 50px; border: 1px solid var(--border);
+            font-size: 0.95rem; z-index: 2000; opacity: 0; pointer-events: none;
+            transition: opacity 0.3s, transform 0.3s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); font-weight: 500;
+            white-space: nowrap;
+            backdrop-filter: blur(10px);
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(10px); }
+
+        /* UI Overlay */
+        .ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            display: flex; flex-direction: column; justify-content: space-between;
+            padding: max(15px, env(safe-area-inset-top)) max(15px, env(safe-area-inset-right)) max(15px, env(safe-area-inset-bottom)) max(15px, env(safe-area-inset-left));
+            z-index: 10;
+            transition: opacity 0.3s;
+        }
+        .ui-layer.fade-out { opacity: 0; pointer-events: none !important; }
+
+        /* Top Bar */
+        .header {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            pointer-events: auto;
+        }
+
+        .btn-icon {
+            background: var(--panel); backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            color: white; width: 42px; height: 42px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            text-decoration: none; font-size: 1.1rem; cursor: pointer;
+            transition: 0.2s; margin-left: 8px;
+        }
+        .btn-icon:active { transform: scale(0.9); }
+        .btn-icon.active { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 15px var(--accent); }
+
+        /* Bottom Toolbar */
+        .toolbar-container {
+            pointer-events: auto;
+            display: flex; flex-direction: column; align-items: flex-end;
+            margin: 0 auto; width: 100%; max-width: 500px;
+        }
+
+        .toolbar {
+            background: var(--panel); backdrop-filter: blur(15px);
+            border: 1px solid var(--border); border-radius: 20px;
+            padding: 15px; width: 100%;
+            display: flex; flex-direction: column; gap: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-origin: bottom center;
+        }
+
+        .toolbar.minimized { transform: scaleY(0); opacity: 0; height: 0; padding: 0; margin: 0; border: none; }
+
+        .toggle-btn {
+            background: var(--panel); border: 1px solid var(--border); border-bottom: none;
+            color: white; width: 40px; height: 30px;
+            border-radius: 12px 12px 0 0;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 0.8rem; margin-right: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .tool-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+
+        input[type=range] {
+            flex: 1; height: 4px; background: rgba(255,255,255,0.2);
+            border-radius: 2px; -webkit-appearance: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 18px; height: 18px;
+            background: white; border-radius: 50%;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .colors { display: flex; gap: 8px; overflow-x: auto; padding: 5px 0; scrollbar-width: none; }
+        .color-dot {
+            width: 32px; height: 32px; border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.2); cursor: pointer; flex-shrink: 0;
+        }
+        .color-dot.active { border-color: white; transform: scale(1.1); box-shadow: 0 0 15px var(--accent); }
+        .rainbow-dot { background: linear-gradient(135deg, #f00, #ff0, #0f0, #00f, #f0f); }
+
+        .btn-tool {
+            background: rgba(255,255,255,0.1); border: none;
+            color: white; padding: 10px 12px; border-radius: 10px;
+            font-size: 0.85rem; cursor: pointer; font-weight: 500;
+            flex: 1; transition: 0.2s;
+        }
+        .btn-tool.active { background: var(--accent); box-shadow: 0 0 15px rgba(217, 70, 239, 0.4); }
+
+        .label { font-size: 0.75rem; color: #aaa; width: 50px; }
+
+        /* Mobile responsiveness */
+        @media (max-width: 500px) {
+            .breath-overlay { transform: translate(-50%, -50%) scale(0.65); }
+            .breath-overlay.corner-mode { transform: scale(0.3); }
+        }
+        
+    </style>
+</head>
+<body>
+
+    <div id="toast" class="toast"></div>
+
+    <div id="canvas-wrapper">
+        <canvas id="c"></canvas>
+    </div>
+
+    <div class="breath-overlay" id="breathGuide">
+        <div class="breath-ring"></div>
+        <div class="breath-core"></div>
+        <div class="breath-label label-in">Inhale</div>
+        <div class="breath-label label-out">Exhale</div>
+    </div>
+
+    <div class="ui-layer" id="uiLayer">
+        <div class="header">
+            <div style="display:flex;">
+                <a href="../pages/index.html" class="btn-icon" title="Home">🏠</a>
+                <a href="../pages/games.html" class="btn-icon" title="Exit">✕</a>
+            </div>
+            
+            <div style="display:flex;">
+                <button class="btn-icon" onclick="toggleZenMode()" title="Zen Mode">👁️</button>
+                <button class="btn-icon" onclick="toggleSpin()" title="Spin Canvas">🔄</button>
+                <button class="btn-icon" id="breathBtn" onclick="toggleBreathe()" title="Breathing Guide">🧘</button>
+                <button class="btn-icon" onclick="undo()" title="Undo">↩️</button>
+                <button class="btn-icon" onclick="saveArt()" title="Download">⬇️</button>
+            </div>
+        </div>
+
+        <div class="toolbar-container">
+            <button class="toggle-btn" onclick="toggleToolbar()">▼</button>
+            <div class="toolbar" id="mainToolbar">
+                
+                <!-- Preset Mood Palettes -->
+                <div class="tool-row palette-row" style="gap: 6px;">
+                    <button class="btn-tool active" style="font-size:0.75rem; padding: 8px;" onclick="setPalette('none', this)">🎨 Custom</button>
+                    <button class="btn-tool" style="font-size:0.75rem; padding: 8px;" onclick="setPalette('ocean', this)">🌊 Ocean</button>
+                    <button class="btn-tool" style="font-size:0.75rem; padding: 8px;" onclick="setPalette('bloom', this)">🌸 Bloom</button>
+                    <button class="btn-tool" style="font-size:0.75rem; padding: 8px;" onclick="setPalette('forest', this)">🌿 Forest</button>
+                </div>
+
+                <div class="colors">
+                    <div class="color-dot rainbow-dot" onclick="setColor('rainbow', this)"></div>
+                    <div class="color-dot active" style="background:#d946ef" onclick="setColor('#d946ef', this)"></div>
+                    <div class="color-dot" style="background:#3b82f6" onclick="setColor('#3b82f6', this)"></div>
+                    <div class="color-dot" style="background:#06b6d4" onclick="setColor('#06b6d4', this)"></div>
+                    <div class="color-dot" style="background:#10b981" onclick="setColor('#10b981', this)"></div>
+                    <div class="color-dot" style="background:#f59e0b" onclick="setColor('#f59e0b', this)"></div>
+                    <div class="color-dot" style="background:#ef4444" onclick="setColor('#ef4444', this)"></div>
+                    <div class="color-dot" style="background:#ffffff" onclick="setColor('#ffffff', this)"></div>
+                </div>
+
+                <div class="tool-row">
+                    <span class="label">Symm.</span>
+                    <input type="range" min="2" max="24" value="8" step="2" oninput="updateSegments(this.value)">
+                    <span id="segDisplay" class="label" style="text-align:right;">8</span>
+                </div>
+                
+                <div class="tool-row">
+                    <span class="label">Width</span>
+                    <input type="range" min="1" max="30" value="3" oninput="lineWidth = this.value">
+                </div>
+
+                <div class="tool-row" style="gap:8px;">
+                    <button class="btn-tool active" id="mirrorBtn" onclick="toggleMirror()">Mirror</button>
+                    <button class="btn-tool" id="spiralBtn" onclick="toggleSpiral()">Spiral</button>
+                    <button class="btn-tool" id="clearBtn" onclick="handleClearBtn()" style="background:rgba(239, 68, 68, 0.2); color:#fca5a5;">Clear</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * Yodha Mandala - Zen Studio Engine
+         * Optimized for Mobile + High DPR Canvas
+         */
+        const canvas = document.getElementById('c');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const uiLayer = document.getElementById('uiLayer');
+        const breathGuide = document.getElementById('breathGuide');
+        const toolbar = document.getElementById('mainToolbar');
+
+        // State & Settings
+        let width, height, cx, cy;
+        let isDrawing = false;
+        let segments = 8;
+        let color = '#d946ef';
+        let isRainbow = false;
+        let lineWidth = 3;
+        let mirror = true;
+        let spiral = false;
+        let spiralAngle = 0;
+        let isSpinning = false;
+        let isZenMode = false;
+        let hue = 0;
+        let strokeCount = 0;
+        
+        // Performance History (ImageData)
+        let historyData = [];
+        
+        // Wellness Tracking
+        const sessionStart = Date.now();
+
+        // Preset Palettes
+        const palettes = {
+            ocean: ['#0284c7', '#0ea5e9', '#38bdf8', '#7dd3fc', '#06b6d4'],
+            bloom: ['#db2777', '#ec4899', '#f472b6', '#fbcfe8', '#d946ef'],
+            forest: ['#059669', '#10b981', '#34d399', '#6ee7b7', '#84cc16']
+        };
+        let activePalette = null;
+
+        // Toast System
+        let toastTimeout;
+        function showToast(msg, duration = 3000) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.classList.add('show');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => t.classList.remove('show'), duration);
+        }
+
+        // Init & Analytics
+        function init() {
+            resize();
+            window.addEventListener('resize', resize);
+            
+            // Pointer Events (Native touch support handled)
+            canvas.addEventListener('pointerdown', startDraw);
+            canvas.addEventListener('pointermove', draw);
+            canvas.addEventListener('pointerup', endDraw);
+            canvas.addEventListener('pointerleave', endDraw);
+
+            clearCanvas(false);
+
+            // Startup Wellness Logic
+            checkFirstVisit();
+            window.addEventListener('beforeunload', logSessionTime);
+        }
+
+        function checkFirstVisit() {
+            const totalMins = parseFloat(localStorage.getItem('mandala_total_mins') || 0);
+            
+            if (!localStorage.getItem('mandala_visited')) {
+                setTimeout(() => showToast("✨ Tap anywhere to draw your mandala", 4000), 1000);
+                localStorage.setItem('mandala_visited', 'true');
+            } else if (totalMins >= 1) {
+                setTimeout(() => showToast(`You've spent ${Math.round(totalMins)} mins creating mandalas 🎨`, 4000), 1000);
+            }
+        }
+
+        function logSessionTime() {
+            const mins = (Date.now() - sessionStart) / 60000;
+            let total = parseFloat(localStorage.getItem('mandala_total_mins') || 0);
+            localStorage.setItem('mandala_total_mins', total + mins);
+        }
+
+        // Mobile Optimized High-DPR Resize
+        function resize() {
+            let temp;
+            if (canvas.width > 0 && canvas.height > 0) {
+                try {
+                    temp = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                } catch(e) { console.log("Init pass"); }
+            }
+            
+            const dpr = window.devicePixelRatio || 1;
+            width = window.innerWidth;
+            height = window.innerHeight;
+            
+            // Set actual physical pixels
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            cx = width / 2;
+            cy = height / 2;
+            
+            ctx.resetTransform();
+            ctx.scale(dpr, dpr);
+            
+            // Restore background and image data perfectly
+            ctx.fillStyle = '#050508';
+            ctx.fillRect(0, 0, width, height); 
+            
+            if (temp) {
+                ctx.putImageData(temp, 0, 0); 
+            }
+            
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+        }
+
+        // --- Drawing Engine ---
+        let lastX, lastY;
+
+        function startDraw(e) {
+            if (isZenMode) {
+                toggleZenMode();
+                return;
+            }
+            if (isSpinning) {
+                showToast("🔄 Viewing mode — tap spin icon to draw");
+                return;
+            }
+            
+            isDrawing = true;
+            uiLayer.classList.add('fade-out'); // Auto Hide UI
+            breathGuide.classList.add('corner-mode'); // Move breathing guide away
+            saveState();
+            
+            [lastX, lastY] = [e.clientX, e.clientY];
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            e.preventDefault();
+
+            const x = e.clientX;
+            const y = e.clientY;
+            strokeCount++;
+
+            if (spiral) spiralAngle += 0.02;
+
+            // Color Dynamics
+            if (activePalette) {
+                const colorIdx = Math.floor(strokeCount / 15) % activePalette.length;
+                ctx.strokeStyle = activePalette[colorIdx];
+                ctx.shadowColor = activePalette[colorIdx];
+            } else if (isRainbow) {
+                hue = (hue + 2) % 360;
+                ctx.strokeStyle = `hsl(${hue}, 100%, 60%)`;
+                ctx.shadowColor = `hsl(${hue}, 100%, 60%)`;
+            } else {
+                ctx.strokeStyle = color;
+                ctx.shadowColor = color;
+            }
+
+            ctx.lineWidth = lineWidth;
+            ctx.shadowBlur = 15; 
+
+            for (let i = 0; i < segments; i++) {
+                const angle = (Math.PI * 2 * i) / segments + spiralAngle;
+                drawSegment(lastX, lastY, x, y, angle);
+                if(mirror) drawSegment(lastX, lastY, x, y, angle, true);
+            }
+
+            [lastX, lastY] = [x, y];
+        }
+
+        function drawSegment(x1, y1, x2, y2, angle, isMirrored = false) {
+            ctx.beginPath();
+            const p1 = rotatePoint(x1, y1, cx, cy, angle, isMirrored);
+            const p2 = rotatePoint(x2, y2, cx, cy, angle, isMirrored);
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+        }
+
+        function rotatePoint(x, y, cx, cy, angle, mirror) {
+            let dx = x - cx;
+            let dy = y - cy;
+            if (mirror) dx = -dx;
+            const cos = Math.cos(angle);
+            const sin = Math.sin(angle);
+            return {
+                x: cx + (dx * cos - dy * sin),
+                y: cy + (dx * sin + dy * cos)
+            };
+        }
+
+        function endDraw() {
+            if (!isDrawing) return;
+            isDrawing = false;
+            
+            if (!isZenMode) {
+                uiLayer.classList.remove('fade-out');
+            }
+            breathGuide.classList.remove('corner-mode');
+        }
+
+        // --- Hardware Accelerated Undo System ---
+        function saveState() {
+            if (historyData.length >= 10) historyData.shift();
+            historyData.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+        }
+
+        function undo() {
+            if (historyData.length === 0) {
+                showToast("Nothing to undo");
+                return;
+            }
+            const previous = historyData.pop();
+            ctx.putImageData(previous, 0, 0);
+        }
+
+        // --- UI Logic & Features ---
+        function toggleToolbar() {
+            toolbar.classList.toggle('minimized');
+            const btn = document.querySelector('.toggle-btn');
+            btn.innerText = toolbar.classList.contains('minimized') ? '▼' : '▲';
+        }
+
+        function toggleZenMode() {
+            isZenMode = !isZenMode;
+            if (isZenMode) {
+                uiLayer.classList.add('fade-out');
+                showToast("👁️ Zen Mode active. Tap anywhere to restore UI.");
+            } else {
+                uiLayer.classList.remove('fade-out');
+            }
+        }
+
+        function setPalette(name, el) {
+            document.querySelectorAll('.palette-row .btn-tool').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.color-dot').forEach(b => b.classList.remove('active'));
+            if (el) el.classList.add('active');
+            
+            if (name === 'none') {
+                activePalette = null;
+            } else {
+                activePalette = palettes[name];
+                isRainbow = false;
+            }
+        }
+
+        function setColor(c, el) {
+            document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+            document.querySelectorAll('.palette-row .btn-tool').forEach(b => b.classList.remove('active'));
+            
+            const customPaletteBtn = document.querySelector('.palette-row .btn-tool');
+            if (customPaletteBtn) {
+                customPaletteBtn.classList.add('active'); // Re-highlight custom
+            }
+            
+            if (el) el.classList.add('active');
+            activePalette = null;
+            if (c === 'rainbow') { isRainbow = true; } 
+            else { isRainbow = false; color = c; }
+        }
+
+        function updateSegments(val) {
+            segments = parseInt(val);
+            document.getElementById('segDisplay').innerText = val;
+        }
+
+        function toggleMirror() {
+            mirror = !mirror;
+            document.getElementById('mirrorBtn').classList.toggle('active');
+        }
+
+        function toggleSpiral() {
+            spiral = !spiral;
+            document.getElementById('spiralBtn').classList.toggle('active');
+            spiralAngle = 0;
+        }
+
+        function toggleSpin() {
+            isSpinning = !isSpinning;
+            canvas.classList.toggle('spinning');
+            
+            if (isSpinning) {
+                canvas.style.cursor = 'default';
+                showToast("🔄 Viewing mode — tap spin again to draw");
+                if(!toolbar.classList.contains('minimized')) toggleToolbar();
+            } else {
+                canvas.style.cursor = 'crosshair';
+                showToast("✏️ Draw mode active");
+            }
+        }
+
+        function toggleBreathe() {
+            breathGuide.classList.toggle('active');
+            document.getElementById('breathBtn').classList.toggle('active');
+        }
+
+        // Safe Destructive Clear
+        let clearStep = 0;
+        let clearTimer;
+        function handleClearBtn() {
+            const btn = document.getElementById('clearBtn');
+            if (clearStep === 0) {
+                btn.innerText = "Sure?";
+                clearStep = 1;
+                clearTimer = setTimeout(() => {
+                    clearStep = 0;
+                    btn.innerText = "Clear";
+                }, 2000);
+            } else {
+                clearTimeout(clearTimer);
+                clearCanvas();
+                clearStep = 0;
+                btn.innerText = "Clear";
+                showToast("Canvas cleared ✨");
+            }
+        }
+
+        function clearCanvas(save = true) {
+            if(save) saveState();
+            ctx.fillStyle = '#050508';
+            ctx.fillRect(0, 0, width, height);
+            spiralAngle = 0;
+        }
+
+        function saveArt() {
+            logSessionTime();
+            const dateStr = new Date().toLocaleDateString('en-IN').replace(/\//g, '-');
+            const link = document.createElement('a');
+            link.download = `YodhaMind-Mandala-${dateStr}.jpg`;
+            link.href = canvas.toDataURL('image/jpeg');
+            link.click();
+            showToast("Masterpiece saved! ⬇️");
+        }
+
+        init();
+    </script>
+    <script src="../shared/crisis-support.js"></script>
+</body>
+</html>
+
+

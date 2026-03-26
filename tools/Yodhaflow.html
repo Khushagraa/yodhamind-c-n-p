@@ -1,0 +1,779 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Yodha Flow - Unblock Your Mind</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        /* --- YodhaMind Design System --- */
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --flow-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --bg-light: #fbfdff;
+            --text-main: #2d3748;
+            --text-sub: #718096;
+            --glass: rgba(255, 255, 255, 0.8);
+            --glass-border: rgba(255, 255, 255, 0.5);
+            --tile-bg: #ffffff;
+            --tile-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            --pipe-off: #cbd5e0;
+            --pipe-on: #4facfe;
+            --hint-col: #f59e0b;
+        }
+
+        body.dark-mode {
+            --bg-light: #0f172a;
+            --text-main: #f1f5f9;
+            --text-sub: #94a3b8;
+            --glass: rgba(30, 41, 59, 0.9);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --tile-bg: #1e293b;
+            --tile-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            --pipe-off: #334155;
+            --pipe-on: #38bdf8;
+        }
+
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            margin: 0; padding: 0;
+            background: var(--bg-light);
+            font-family: 'Poppins', sans-serif;
+            color: var(--text-main);
+            height: 100vh;
+            height: 100dvh; /* iOS Safari fix */
+            display: flex; flex-direction: column;
+            transition: background 0.3s;
+            overflow: hidden;
+        }
+
+        /* --- Navigation --- */
+        nav {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            padding: max(10px, env(safe-area-inset-top)) 20px 10px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.05);
+            z-index: 100;
+            border-bottom: 1px solid var(--glass-border);
+            flex-shrink: 0;
+        }
+
+        .logo {
+            font-weight: 700; font-size: 1.2rem;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        /* Liquid Gradient Buttons */
+        .flow-btn {
+            background: white; border: none; color: #4facfe;
+            padding: 8px 12px; border-radius: 12px;
+            font-weight: 600; cursor: pointer;
+            box-shadow: 0 4px 10px rgba(79, 172, 254, 0.2);
+            transition: all 0.2s; font-size: 0.9rem;
+        }
+        .flow-btn:hover {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white; transform: translateY(-2px);
+        }
+        .flow-btn.home-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .flow-btn.close { color: #e53e3e; }
+        .flow-btn.close:hover { background: #ffe4e4; color: #c53030; }
+
+        /* --- Game Area --- */
+        .game-container {
+            flex: 1;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 10px 10px 80px 10px; /* Extra bottom padding for FAB */
+            position: relative;
+        }
+
+        .level-info {
+            margin-bottom: 15px;
+            display: flex; gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .badge {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            padding: 6px 16px; border-radius: 20px;
+            font-weight: 600; font-size: 0.9rem;
+            color: var(--text-sub);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .badge span { color: #4facfe; font-weight: 700; }
+
+        /* Grid Board */
+        .board-wrapper {
+            background: var(--glass);
+            padding: 10px;
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.05);
+            max-width: 100%;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .grid {
+            display: grid;
+            gap: 4px;
+            width: 100%; height: 100%;
+        }
+
+        .tile {
+            background: var(--tile-bg);
+            border-radius: 8px;
+            box-shadow: var(--tile-shadow);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 0.2s, background 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .tile:active { transform: scale(0.95); }
+        
+        /* Visual Distinction for Filler Tiles */
+        .tile.filler:not(.active) .pipe-svg { opacity: 0.3; }
+        
+        /* Source/Sink Pulse */
+        .tile.source { border: 2px solid #48bb78; box-shadow: inset 0 0 10px rgba(72, 187, 120, 0.3); }
+        .tile.sink { border: 2px solid #ed8936; box-shadow: inset 0 0 10px rgba(237, 137, 54, 0.3); }
+        .tile.hint-locked { border: 2px solid var(--hint-col); cursor: default; }
+        .tile.hint-locked::after {
+            content: "🔒"; position: absolute; font-size: 10px; top: 2px; right: 2px;
+        }
+
+        /* Pipe SVG */
+        .pipe-svg {
+            width: 100%; height: 100%;
+            fill: none;
+            stroke: var(--pipe-off);
+            stroke-width: 20;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: stroke 0.3s, opacity 0.3s;
+        }
+
+        /* Liquid Flow Animation */
+        .tile.active .pipe-svg {
+            stroke: var(--pipe-on);
+            stroke-dasharray: 100;
+            stroke-dashoffset: 100;
+            animation: flowAnim 0.8s forwards ease-out;
+            filter: drop-shadow(0 0 5px var(--pipe-on));
+            opacity: 1; /* Override filler opacity */
+        }
+        
+        @keyframes flowAnim {
+            to { stroke-dashoffset: 0; }
+        }
+        
+        .tile.source .pipe-svg { stroke: #48bb78; }
+        .tile.sink .pipe-svg { stroke: #ed8936; }
+        .tile.source.active .pipe-svg { stroke: #48bb78; filter: drop-shadow(0 0 5px #48bb78); }
+        .tile.sink.active .pipe-svg { stroke: #ed8936; filter: drop-shadow(0 0 5px #ed8936); }
+
+        /* Hint FAB */
+        .fab-hint {
+            position: fixed; bottom: max(20px, env(safe-area-inset-bottom)); right: 20px;
+            background: white; color: var(--hint-col);
+            border: 2px solid var(--hint-col);
+            padding: 10px 20px; border-radius: 50px;
+            font-weight: 700; font-size: 0.9rem;
+            box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3);
+            cursor: pointer; display: flex; align-items: center; gap: 8px;
+            transition: transform 0.2s; z-index: 50;
+        }
+        .fab-hint:active { transform: scale(0.95); }
+        body.dark-mode .fab-hint { background: #1e293b; }
+        .badge-count {
+            background: var(--hint-col); color: white;
+            font-size: 0.75rem; width: 20px; height: 20px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        }
+
+        /* Win Modal */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 200;
+            display: none; align-items: center; justify-content: center;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+        .modal-box {
+            background: var(--bg-light); padding: 30px;
+            border-radius: 24px; text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            color: var(--text-main); width: 85%; max-width: 320px;
+            border: 1px solid var(--glass-border);
+        }
+        @keyframes popIn { from{transform:scale(0.8); opacity: 0;} to{transform:scale(1); opacity: 1;} }
+
+        .btn-main {
+            background: var(--flow-gradient); color: white; border: none;
+            padding: 12px 30px; border-radius: 30px;
+            font-weight: 600; margin-top: 20px; cursor: pointer;
+            box-shadow: 0 10px 20px rgba(79, 172, 254, 0.3);
+            width: 100%; font-size: 1rem;
+        }
+        
+        /* Toast */
+        .toast {
+            position: fixed; top: max(80px, env(safe-area-inset-top) + 60px); 
+            left: 50%; transform: translateX(-50%);
+            background: rgba(30, 41, 59, 0.95); color: white; 
+            padding: 10px 20px; border-radius: 30px; font-size: 0.9rem; 
+            z-index: 2000; opacity: 0; pointer-events: none; 
+            transition: opacity 0.3s; box-shadow: 0 10px 25px rgba(0,0,0,0.2); 
+            backdrop-filter: blur(5px);
+        }
+        .toast.show { opacity: 1; }
+
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="logo">🌊 Yodha Flow</div>
+        <div class="nav-controls" style="display:flex; gap:8px;">
+            <button class="flow-btn home-btn" onclick="window.location.href='../index.html'">🏠</button>
+            <button class="flow-btn" onclick="toggleTheme()">🌓</button>
+            <button class="flow-btn close" onclick="window.location.href='../games.html'">✕</button>
+        </div>
+    </nav>
+
+    <div class="toast" id="toast"></div>
+
+    <div class="game-container">
+        <div class="level-info">
+            <div class="badge">Level <span id="levelVal">1</span></div>
+            <div class="badge">Size <span id="sizeVal">4x4</span></div>
+            <div class="badge">Moves <span id="movesVal">0</span></div>
+        </div>
+
+        <div class="board-wrapper" id="boardWrapper">
+            <div class="grid" id="gameGrid"></div>
+        </div>
+        
+        <div id="instructions" style="margin-top: 20px; color: var(--text-sub); font-size: 0.85rem; text-align:center; transition: opacity 0.5s;">
+            Tap tiles to rotate. Connect <span style="color:#48bb78; font-weight:bold;">Green</span> to <span style="color:#ed8936; font-weight:bold;">Orange</span>.
+        </div>
+    </div>
+
+    <button class="fab-hint" id="hintBtn" onclick="useHint()">
+        <span>💡 Fix Pipe</span>
+        <span class="badge-count" id="hintCount">3</span>
+    </button>
+
+    <div class="modal-overlay" id="winModal">
+        <div class="modal-box">
+            <h2 style="margin:0 0 10px;">Flow Restored! 🌊</h2>
+            <p id="winAffirmation" style="color:var(--text-sub); margin-bottom:20px; font-style:italic; font-size: 0.95rem;">Mind unblocked.</p>
+            
+            <div style="display:flex; justify-content:space-around; margin-bottom:20px; font-size:0.9rem; color: var(--text-sub);">
+                <div>Level: <strong id="winLevel" style="color:var(--text-main);"></strong></div>
+                <div>Moves: <strong id="winMoves" style="color:var(--text-main);"></strong></div>
+                <div>Hints: <strong id="winHints" style="color:var(--text-main);"></strong></div>
+            </div>
+            
+            <button class="btn-main" onclick="nextLevel()">Next Level ➜</button>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * Yodha Flow Engine v2.1
+         * Fixed: AudioContext, Infinite Generation, Hint Precision, Win Guards
+         */
+
+        // --- Config & State ---
+        let level = parseInt(localStorage.getItem('yodhaflow_level')) || 1;
+        let moves = 0;
+        let hints = parseInt(localStorage.getItem('yodhaflow_hints')) || 3;
+        let hintsUsedThisLevel = 0;
+        let levelComplete = false;
+        
+        // Dynamic Grid
+        let ROWS = 4;
+        let COLS = 4;
+        let MIN_PATH_LENGTH = 3;
+
+        let gridData = [];
+        let startPos = {r:0, c:0};
+        let endPos = {r:0, c:0};
+        
+        // Pipe Bitmask: Top:1, Right:2, Bottom:4, Left:8
+        const PIPE = { STRAIGHT: 5, CURVE: 3, TEE: 7, CROSS: 15, CAP: 1 };
+
+        const gridEl = document.getElementById('gameGrid');
+        const boardWrapper = document.getElementById('boardWrapper');
+
+        // --- Safe Audio Context (Mobile Lazy Init) ---
+        let audioCtx = null;
+        function getAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        // --- Initialization ---
+        function initGame() {
+            // First time UI behavior
+            const played = localStorage.getItem('flow_played');
+            const instEl = document.getElementById('instructions');
+            if (!played) {
+                setTimeout(() => {
+                    instEl.style.opacity = '0';
+                    setTimeout(() => instEl.style.display = 'none', 500);
+                    localStorage.setItem('flow_played', 'true');
+                }, 5000);
+            } else {
+                instEl.style.display = 'none';
+            }
+
+            document.getElementById('hintCount').innerText = hints;
+            loadLevelConfig();
+            startLevel();
+        }
+
+        function loadLevelConfig() {
+            // Difficulty Progression Logic
+            if(level <= 2) { ROWS=4; COLS=4; MIN_PATH_LENGTH=4; }
+            else if(level <= 5) { ROWS=5; COLS=5; MIN_PATH_LENGTH=6; }
+            else if(level <= 9) { ROWS=6; COLS=6; MIN_PATH_LENGTH=10; }
+            else { ROWS=7; COLS=7; MIN_PATH_LENGTH=15; } // Master levels
+
+            document.getElementById('sizeVal').innerText = `${ROWS}x${COLS}`;
+            
+            // Smart Board Sizing (Width & Height aware)
+            const availableWidth = Math.min(window.innerWidth, 500) - 40; // padding
+            const availableHeight = window.innerHeight - 200; // Account for Nav, Badges, and FAB
+            const maxDimension = Math.max(ROWS, COLS);
+            const tileSize = Math.max(30, Math.floor(Math.min(availableWidth, availableHeight) / maxDimension) - 5);
+            
+            gridEl.style.gridTemplateColumns = `repeat(${COLS}, 1fr)`;
+            gridEl.style.width = `${tileSize * COLS + (COLS-1)*4}px`;
+            gridEl.style.height = `${tileSize * ROWS + (ROWS-1)*4}px`;
+            
+            const existingStyle = document.getElementById('dynamic-style');
+            if(existingStyle) existingStyle.remove();
+            
+            const style = document.createElement('style');
+            style.id = 'dynamic-style';
+            style.innerHTML = `.tile { width: ${tileSize}px; height: ${tileSize}px; }`;
+            document.head.appendChild(style);
+        }
+
+        function startLevel() {
+            moves = 0;
+            hintsUsedThisLevel = 0;
+            levelComplete = false;
+            document.getElementById('movesVal').innerText = 0;
+            document.getElementById('levelVal').innerText = level;
+            document.getElementById('winModal').style.display = 'none';
+            
+            generateSolvableLevel();
+            render();
+            checkFlow(); 
+        }
+
+        // --- Safe Solvable Generator ---
+        function generateSolvableLevel() {
+            let success = false;
+            let attempts = 0;
+            const MAX_ATTEMPTS = 100;
+
+            while(!success && attempts < MAX_ATTEMPTS) {
+                attempts++;
+                gridData = [];
+                for(let r=0; r<ROWS; r++) {
+                    let row = [];
+                    for(let c=0; c<COLS; c++) {
+                        row.push({ type: 0, rot: 0, correctRot: 0, active: false, locked: false, isPathTile: false });
+                    }
+                    gridData.push(row);
+                }
+
+                startPos = {r: 0, c: Math.floor(Math.random() * COLS)};
+                endPos = {r: ROWS-1, c: Math.floor(Math.random() * COLS)};
+
+                // Random Walk with Path Length constraint
+                let curr = { ...startPos };
+                let path = [curr];
+                let visited = new Set([`${curr.r},${curr.c}`]);
+
+                while(curr.r !== endPos.r || curr.c !== endPos.c) {
+                    let candidates = [];
+                    const dirs = [[1,0], [0,-1], [0,1], [-1,0]];
+                    
+                    for(let d of dirs) {
+                        let nr = curr.r + d[0], nc = curr.c + d[1];
+                        if(nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && !visited.has(`${nr},${nc}`)) {
+                            candidates.push({r:nr, c:nc});
+                        }
+                    }
+
+                    if(candidates.length === 0) break; // Dead end
+
+                    candidates.sort(() => Math.random() - 0.5);
+                    let next = candidates[0];
+                    
+                    visited.add(`${next.r},${next.c}`);
+                    path.push(next);
+                    curr = next;
+                }
+
+                if(path.length >= MIN_PATH_LENGTH && curr.r === endPos.r && curr.c === endPos.c) {
+                    for(let i=0; i<path.length; i++) {
+                        let p = path[i];
+                        let prev = i > 0 ? path[i-1] : null;
+                        let next = i < path.length-1 ? path[i+1] : null;
+                        
+                        let mask = 0;
+                        if(prev) mask |= getDir(p, prev);
+                        if(next) mask |= getDir(p, next);
+                        if(i===0) mask |= (path.length > 1 ? getDir(p, path[1]) : 4);
+                        if(i===path.length-1) mask |= (path.length > 1 ? getDir(p, path[i-1]) : 1);
+
+                        let {type, rot} = maskToPipeData(mask);
+                        gridData[p.r][p.c].type = type;
+                        gridData[p.r][p.c].correctRot = rot;
+                        gridData[p.r][p.c].rot = rot;
+                        gridData[p.r][p.c].isPathTile = true;
+                    }
+                    success = true;
+                }
+            }
+
+            if (!success) {
+                // Fallback to simple L-shape/Snake if generator stuck
+                generateSimpleFallback();
+            }
+
+            // Fill empty & Scramble
+            for(let r=0; r<ROWS; r++) {
+                for(let c=0; c<COLS; c++) {
+                    if(!gridData[r][c].isPathTile) {
+                        gridData[r][c].type = [PIPE.STRAIGHT, PIPE.CURVE, PIPE.TEE][Math.floor(Math.random()*3)];
+                        gridData[r][c].correctRot = Math.floor(Math.random()*4) * 90;
+                        gridData[r][c].rot = Math.floor(Math.random()*4) * 90;
+                    } else {
+                        // Scramble Path (except start)
+                        if(r===startPos.r && c===startPos.c) {
+                            gridData[r][c].rot = gridData[r][c].correctRot;
+                            gridData[r][c].locked = true;
+                        } else {
+                            let randRot;
+                            do {
+                                randRot = Math.floor(Math.random() * 4) * 90;
+                            } while (randRot === gridData[r][c].correctRot && Math.random() > 0.3);
+                            gridData[r][c].rot = randRot;
+                        }
+                    }
+                }
+            }
+        }
+
+        function generateSimpleFallback() {
+            gridData = [];
+            for(let r=0; r<ROWS; r++) {
+                let row = [];
+                for(let c=0; c<COLS; c++) row.push({ type: 0, rot: 0, correctRot: 0, active: false, locked: false, isPathTile: false });
+                gridData.push(row);
+            }
+            startPos = {r: 0, c: 0};
+            endPos = {r: ROWS-1, c: COLS-1};
+            let path = [];
+            for(let c=0; c<COLS; c++) path.push({r:0, c});
+            for(let r=1; r<ROWS; r++) path.push({r, c:COLS-1});
+
+            for(let i=0; i<path.length; i++) {
+                let p = path[i];
+                let prev = i > 0 ? path[i-1] : null;
+                let next = i < path.length-1 ? path[i+1] : null;
+
+                let mask = 0;
+                if(prev) mask |= getDir(p, prev);
+                if(next) mask |= getDir(p, next);
+                if(i===0 && path.length>1) mask |= getDir(p, path[1]) | 8; // Force fake start conn
+                if(i===path.length-1 && path.length>1) mask |= getDir(p, path[i-1]) | 2; // Force fake end conn
+
+                let {type, rot} = maskToPipeData(mask);
+                gridData[p.r][p.c].type = type;
+                gridData[p.r][p.c].correctRot = rot;
+                gridData[p.r][p.c].rot = rot;
+                gridData[p.r][p.c].isPathTile = true;
+            }
+        }
+
+        function getDir(from, to) {
+            if(to.r < from.r) return 1; // Top
+            if(to.c > from.c) return 2; // Right
+            if(to.r > from.r) return 4; // Bottom
+            if(to.c < from.c) return 8; // Left
+            return 0;
+        }
+
+        function maskToPipeData(mask) {
+            const shapes = [{t: PIPE.CAP, b: 1}, {t: PIPE.CURVE, b: 3}, {t: PIPE.STRAIGHT, b: 5}, {t: PIPE.TEE, b: 7}, {t: PIPE.CROSS, b: 15}];
+            for(let s of shapes) {
+                for(let r=0; r<360; r+=90) {
+                    if(rotateMask(s.b, r) === mask) return {type: s.t, rot: r};
+                }
+            }
+            return {type: PIPE.CAP, rot: 0}; // Default failsafe
+        }
+
+        function rotateMask(mask, deg) {
+            let rots = deg / 90;
+            for(let i=0; i<rots; i++) {
+                let m = 0;
+                if(mask & 1) m |= 2; if(mask & 2) m |= 4; if(mask & 4) m |= 8; if(mask & 8) m |= 1;
+                mask = m;
+            }
+            return mask;
+        }
+
+        // --- Render & Logic ---
+        function render() {
+            gridEl.innerHTML = '';
+            for(let r=0; r<ROWS; r++) {
+                for(let c=0; c<COLS; c++) {
+                    const tile = gridData[r][c];
+                    const el = document.createElement('div');
+                    el.className = `tile ${tile.active ? 'active' : ''}`;
+                    if(r===startPos.r && c===startPos.c) el.classList.add('source');
+                    if(r===endPos.r && c===endPos.c) el.classList.add('sink');
+                    if(tile.locked) el.classList.add('hint-locked');
+                    if(!tile.isPathTile) el.classList.add('filler');
+                    
+                    let pathD = "";
+                    if(tile.type === PIPE.STRAIGHT) pathD = "M50,0 L50,100";
+                    if(tile.type === PIPE.CURVE) pathD = "M50,0 L50,50 L100,50";
+                    if(tile.type === PIPE.TEE) pathD = "M50,0 L50,100 M50,50 L100,50";
+                    if(tile.type === PIPE.CROSS) pathD = "M50,0 L50,100 M0,50 L100,50";
+                    if(tile.type === PIPE.CAP) pathD = "M50,0 L50,50";
+
+                    // Use SVG viewbox 0 0 100 100 for scalability
+                    el.innerHTML = `<svg class="pipe-svg" viewBox="0 0 100 100"><path d="${pathD}" /></svg>`;
+                    el.style.transform = `rotate(${tile.rot}deg)`;
+                    
+                    el.onclick = () => rotateTile(r, c);
+                    gridEl.appendChild(el);
+                }
+            }
+        }
+
+        function rotateTile(r, c) {
+            if(gridData[r][c].locked || levelComplete) return;
+            
+            gridData[r][c].rot = (gridData[r][c].rot + 90);
+            moves++;
+            document.getElementById('movesVal').innerText = moves;
+            
+            playSound();
+            checkFlow();
+            
+            const tiles = gridEl.children;
+            const index = r * COLS + c;
+            tiles[index].style.transform = `rotate(${gridData[r][c].rot}deg)`;
+            
+            renderFlowState();
+        }
+        
+        function renderFlowState() {
+            const tiles = gridEl.children;
+            for(let r=0; r<ROWS; r++) {
+                for(let c=0; c<COLS; c++) {
+                    const idx = r * COLS + c;
+                    if(gridData[r][c].active) tiles[idx].classList.add('active');
+                    else tiles[idx].classList.remove('active');
+                }
+            }
+        }
+
+        function checkFlow() {
+            for(let r=0; r<ROWS; r++) for(let c=0; c<COLS; c++) gridData[r][c].active = false;
+            
+            let queue = [startPos];
+            gridData[startPos.r][startPos.c].active = true;
+            let reachedSink = false;
+            let visited = new Set([`${startPos.r},${startPos.c}`]);
+
+            while(queue.length > 0) {
+                let curr = queue.shift();
+                
+                const neighbors = [
+                    {dr:-1, dc:0, dir:1, opp:4}, {dr:0, dc:1, dir:2, opp:8},
+                    {dr:1, dc:0, dir:4, opp:1}, {dr:0, dc:-1, dir:8, opp:2}
+                ];
+
+                neighbors.forEach(n => {
+                    let nr = curr.r + n.dr, nc = curr.c + n.dc;
+                    if(nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
+                        if(hasConnection(curr.r, curr.c, n.dir) && hasConnection(nr, nc, n.opp)) {
+                            if(!visited.has(`${nr},${nc}`)) {
+                                gridData[nr][nc].active = true;
+                                visited.add(`${nr},${nc}`);
+                                queue.push({r:nr, c:nc});
+                                if(nr===endPos.r && nc===endPos.c) reachedSink = true;
+                            }
+                        }
+                    }
+                });
+            }
+
+            renderFlowState();
+
+            if(reachedSink && !levelComplete) {
+                levelComplete = true;
+                
+                // Wellness Affirmations
+                const affirmations = [
+                    "You found the path when it felt blocked. Just like real stress.",
+                    "Clarity comes when you rotate your perspective.",
+                    "Every blocked path has a solution. You proved it.",
+                    "Smooth flow restores a calm mind.",
+                    "Patience reveals the right connections."
+                ];
+
+                setTimeout(() => {
+                    playWin();
+                    if (typeof confetti === 'function') {
+                        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                    }
+                    
+                    document.getElementById('winAffirmation').innerText = `"${affirmations[Math.floor(Math.random() * affirmations.length)]}"`;
+                    document.getElementById('winLevel').innerText = level;
+                    document.getElementById('winMoves').innerText = moves;
+                    document.getElementById('winHints').innerText = hintsUsedThisLevel;
+                    document.getElementById('winModal').style.display = 'flex';
+                }, 400);
+            }
+        }
+
+        function hasConnection(r, c, dirMask) {
+            const tile = gridData[r][c];
+            let baseMask = 0;
+            if(tile.type === PIPE.STRAIGHT) baseMask = 5;
+            if(tile.type === PIPE.CURVE) baseMask = 3;
+            if(tile.type === PIPE.TEE) baseMask = 7;
+            if(tile.type === PIPE.CAP) baseMask = 1;
+            if(tile.type === PIPE.CROSS) baseMask = 15;
+            let mask = rotateMask(baseMask, tile.rot % 360);
+            return (mask & dirMask) !== 0;
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function nextLevel() {
+            level++;
+            localStorage.setItem('yodhaflow_level', level);
+            
+            // Refill hint every 3 levels
+            if (level % 3 === 0 && hints < 5) {
+                hints++;
+                localStorage.setItem('yodhaflow_hints', hints);
+                document.getElementById('hintCount').innerText = hints;
+                setTimeout(() => showToast("💡 Hint refilled! (+1)"), 500);
+            }
+
+            loadLevelConfig(); 
+            startLevel();
+        }
+
+        function useHint() {
+            if(hints <= 0 || levelComplete) return;
+            
+            let candidates = [];
+            for(let r=0; r<ROWS; r++) {
+                for(let c=0; c<COLS; c++) {
+                    const t = gridData[r][c];
+                    // Only target TRUE path tiles that are incorrect
+                    if(!t.locked && t.isPathTile && (t.rot % 360) !== (t.correctRot % 360)) {
+                        candidates.push({r,c});
+                    }
+                }
+            }
+            
+            if(candidates.length > 0) {
+                hints--;
+                hintsUsedThisLevel++;
+                localStorage.setItem('yodhaflow_hints', hints);
+                document.getElementById('hintCount').innerText = hints;
+                
+                const pick = candidates[Math.floor(Math.random() * candidates.length)];
+                const tile = gridData[pick.r][pick.c];
+                tile.rot = tile.correctRot;
+                tile.locked = true;
+                
+                playSound();
+                checkFlow();
+                
+                const index = pick.r * COLS + pick.c;
+                const el = gridEl.children[index];
+                el.style.transform = `rotate(${tile.rot}deg)`;
+                el.classList.add('hint-locked');
+                
+                renderFlowState();
+            }
+        }
+
+        // --- Audio ---
+        function playSound() {
+            const ctx = getAudio();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(400, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.05, ctx.currentTime);
+            gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.1);
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.start(); osc.stop(ctx.currentTime + 0.1);
+        }
+
+        function playWin() {
+            const ctx = getAudio();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(500, ctx.currentTime);
+            osc.frequency.linearRampToValueAtTime(1000, ctx.currentTime + 0.3);
+            gain.gain.setValueAtTime(0.1, ctx.currentTime);
+            gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 1);
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.start(); osc.stop(ctx.currentTime + 1);
+        }
+
+        function toggleTheme() { document.body.classList.toggle('dark-mode'); }
+
+        // Start
+        window.onload = initGame;
+
+    </script>
+    <script src="../shared/crisis-support.js"></script>
+</body>
+</html>
+
+

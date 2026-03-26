@@ -1,0 +1,1232 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title>YodhaMind — My Dashboard</title>
+    <meta name="description" content="Your personal mental wellness hub. Track mood, wellness score, games and more.">
+
+    <link rel="icon" href="../public/favicon.svg" type="image/svg+xml">
+    <link rel="manifest" href="../public/manifest.json"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Shared data layer — must load before any inline script -->
+    <script src="../shared/storage.js"></script>
+
+    <style>
+        /* =====================================================
+           DESIGN TOKENS — exact match to index.html / games.html
+        ===================================================== */
+        :root {
+            --primary:      #7C5CBF;
+            --accent:       #56CFB2;
+            --warm:         #FFF8F0;
+            --text:         #2D2D2D;
+            --soft:         #F0EBF8;
+            --text-light:   #64748b;
+            --glass:        rgba(255, 255, 255, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.5);
+            --shadow-soft:  0 20px 40px rgba(0,0,0,0.05);
+            --shadow-hover: 0 30px 60px rgba(124, 92, 191, 0.15);
+            --radius-card:  24px;
+            --radius-btn:   50px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: linear-gradient(180deg, var(--soft) 0%, var(--warm) 40%, #ffffff 100%);
+            color: var(--text);
+            overflow-x: hidden;
+            min-height: 100dvh;
+            padding-bottom: 80px;
+        }
+
+        /* =====================================================
+           NAV  — matches games.html pattern exactly
+        ===================================================== */
+        nav#navbar {
+            position: fixed; top: 0; width: 100%;
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            z-index: 1000; padding: 14px 0;
+            transition: all 0.3s;
+        }
+        nav#navbar.scrolled {
+            padding: 10px 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+        .nav-container {
+            max-width: 1200px; margin: 0 auto;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 24px;
+        }
+        .logo {
+            font-size: 1.5rem; font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            text-decoration: none; display: flex; align-items: center; gap: 8px;
+        }
+        .nav-right { display: flex; align-items: center; gap: 12px; }
+
+        .streak-pill {
+            display: flex; align-items: center; gap: 6px;
+            background: white;
+            border: 1px solid rgba(124,92,191,0.2);
+            padding: 7px 14px; border-radius: var(--radius-btn);
+            font-size: 0.85rem; font-weight: 700; color: var(--primary);
+            box-shadow: 0 4px 12px rgba(124,92,191,0.08);
+        }
+        .streak-pill.hidden { display: none; }
+
+        .nav-links { display: flex; gap: 24px; align-items: center; }
+        .nav-links a {
+            text-decoration: none; color: var(--text);
+            font-weight: 600; font-size: 0.9rem; transition: color 0.2s;
+        }
+        .nav-links a:hover, .nav-links a.active { color: var(--primary); }
+
+        .btn-cta {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white; padding: 9px 22px; border-radius: var(--radius-btn);
+            text-decoration: none; font-weight: 600; font-size: 0.88rem;
+            border: none; cursor: pointer;
+            box-shadow: 0 8px 20px rgba(124,92,191,0.2);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(124,92,191,0.3);
+            color: white;
+        }
+        @media (max-width: 768px) { .nav-links { display: none; } }
+
+        /* =====================================================
+           PAGE WRAPPER
+        ===================================================== */
+        .page {
+            max-width: 960px; margin: 0 auto;
+            padding: 100px 20px 40px;
+        }
+
+        /* =====================================================
+           GREETING
+        ===================================================== */
+        .greeting { margin-bottom: 28px; }
+        .greeting-eyebrow {
+            font-size: 0.8rem; font-weight: 700; letter-spacing: 0.1em;
+            text-transform: uppercase; color: var(--primary); margin-bottom: 6px;
+        }
+        .greeting-name {
+            font-size: 2rem; font-weight: 800; line-height: 1.2; color: var(--text);
+        }
+        .greeting-sub {
+            font-size: 0.95rem; color: var(--text-light);
+            margin-top: 6px; font-weight: 500;
+        }
+
+        /* =====================================================
+           CARD BASE  — matches games.html .card
+        ===================================================== */
+        .card {
+            background: white;
+            border-radius: var(--radius-card);
+            box-shadow: var(--shadow-soft);
+            border: 1px solid rgba(0,0,0,0.03);
+            padding: 28px;
+            transition: box-shadow 0.3s;
+        }
+        .card-title {
+            font-size: 1rem; font-weight: 800; color: var(--text);
+            margin-bottom: 18px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .card-link {
+            font-size: 0.8rem; font-weight: 600; color: var(--primary);
+            text-decoration: none; opacity: 0.8;
+            background: none; border: none; cursor: pointer;
+            font-family: inherit;
+        }
+        .card-link:hover { opacity: 1; }
+
+        .section-gap { margin-bottom: 20px; }
+
+        /* =====================================================
+           MOOD CHECK-IN
+        ===================================================== */
+        .mood-emojis {
+            display: flex; gap: 8px; justify-content: space-between;
+        }
+        .mood-emoji-btn {
+            flex: 1; border: 2px solid rgba(0,0,0,0.06);
+            border-radius: 16px; background: var(--soft);
+            font-size: 1.5rem; padding: 10px 4px;
+            cursor: pointer; display: flex; flex-direction: column;
+            align-items: center; gap: 4px;
+            transition: all 0.2s; font-family: inherit;
+        }
+        .mood-emoji-btn .mood-label {
+            font-size: 0.6rem; font-weight: 700;
+            color: var(--text-light); letter-spacing: 0.04em;
+        }
+        .mood-emoji-btn:hover {
+            border-color: var(--primary); background: white;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(124,92,191,0.15);
+        }
+        .mood-done-msg {
+            display: none; text-align: center; padding: 12px;
+            font-weight: 700; font-size: 0.95rem; color: var(--primary);
+        }
+        .mood-done-msg span {
+            display: block; font-size: 0.78rem;
+            color: var(--text-light); font-weight: 500; margin-top: 3px;
+        }
+
+        /* =====================================================
+           WELLNESS SCORE CARD
+        ===================================================== */
+        .wellness-card {
+            background: linear-gradient(135deg, var(--primary) 0%, #9B7FD4 60%, var(--accent) 100%);
+            border-radius: var(--radius-card);
+            padding: 28px;
+            color: white;
+            box-shadow: 0 20px 50px rgba(124,92,191,0.3);
+            position: relative; overflow: hidden;
+        }
+        .wellness-card::before {
+            content: ''; position: absolute; top: -50px; right: -50px;
+            width: 180px; height: 180px;
+            background: rgba(255,255,255,0.08); border-radius: 50%;
+        }
+        .wellness-card::after {
+            content: ''; position: absolute; bottom: -40px; left: -30px;
+            width: 130px; height: 130px;
+            background: rgba(255,255,255,0.05); border-radius: 50%;
+        }
+        .wellness-inner {
+            display: flex; align-items: center; gap: 24px;
+            position: relative; z-index: 1;
+        }
+        @media (max-width: 480px) {
+            .wellness-inner { flex-direction: column; align-items: flex-start; gap: 18px; }
+        }
+
+        /* SVG ring */
+        .score-ring-wrap {
+            flex-shrink: 0; position: relative; width: 96px; height: 96px;
+        }
+        .score-ring-wrap svg { transform: rotate(-90deg); }
+        .score-ring-track  { fill: none; stroke: rgba(255,255,255,0.2); stroke-width: 8; }
+        .score-ring-fill   {
+            fill: none; stroke: rgba(255,255,255,0.9); stroke-width: 8;
+            stroke-linecap: round;
+            stroke-dasharray: 264;
+            stroke-dashoffset: 264;
+            transition: stroke-dashoffset 1.4s cubic-bezier(0.22,1,0.36,1);
+        }
+        .score-ring-center {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+        }
+        .score-ring-number { font-size: 1.6rem; font-weight: 800; line-height: 1; }
+        .score-ring-label  {
+            font-size: 0.58rem; font-weight: 700;
+            opacity: 0.75; letter-spacing: 0.06em; text-transform: uppercase;
+        }
+
+        .wellness-text { flex: 1; min-width: 0; }
+        .wellness-status  { font-size: 1.25rem; font-weight: 800; margin-bottom: 4px; }
+        .wellness-tagline { font-size: 0.8rem; opacity: 0.8; font-weight: 500; margin-bottom: 14px; }
+
+        .w-bars { display: flex; flex-direction: column; gap: 6px; }
+        .w-bar-row { display: flex; align-items: center; gap: 8px; }
+        .w-bar-name {
+            font-size: 0.66rem; font-weight: 700; opacity: 0.75;
+            width: 68px; flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.04em;
+        }
+        .w-bar-track {
+            flex: 1; height: 4px; background: rgba(255,255,255,0.2); border-radius: 4px;
+        }
+        .w-bar-fill {
+            height: 100%; border-radius: 4px;
+            background: rgba(255,255,255,0.85); width: 0%;
+            transition: width 1.4s cubic-bezier(0.22,1,0.36,1);
+        }
+        .w-bar-val {
+            font-size: 0.66rem; font-weight: 700; opacity: 0.75;
+            width: 26px; text-align: right; flex-shrink: 0;
+        }
+        .wellness-bottom {
+            position: relative; z-index: 1; margin-top: 14px;
+        }
+        .wellness-assess-btn {
+            background: none; border: none; cursor: pointer;
+            font-family: inherit; font-size: 0.75rem; font-weight: 700;
+            color: rgba(255,255,255,0.75); text-decoration: underline;
+        }
+        .wellness-assess-btn:hover { color: white; }
+
+        /* =====================================================
+           QUICK ACTIONS  2×2
+        ===================================================== */
+        .quick-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+        }
+        .quick-card {
+            background: white; border-radius: 20px;
+            padding: 20px; text-decoration: none; color: var(--text);
+            box-shadow: var(--shadow-soft); border: 1px solid rgba(0,0,0,0.03);
+            transition: all 0.25s;
+            display: flex; flex-direction: column; gap: 10px;
+            position: relative; cursor: pointer; font-family: inherit;
+            text-align: left;
+        }
+        .quick-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-hover); }
+
+        .quick-icon {
+            width: 44px; height: 44px; border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem;
+        }
+        .tint-purple { background: var(--soft); }
+        .tint-teal   { background: rgba(86,207,178,0.12); }
+        .tint-orange { background: rgba(255,160,80,0.12); }
+        .tint-dark   { background: rgba(30,30,60,0.07); }
+
+        .quick-name { font-weight: 800; font-size: 0.95rem; }
+        .quick-sub  { font-size: 0.75rem; color: var(--text-light); font-weight: 500; }
+        .quick-arrow {
+            position: absolute; top: 16px; right: 16px;
+            font-size: 1rem; color: var(--text-light); opacity: 0.35;
+        }
+
+        /* =====================================================
+           MOOD CHART
+        ===================================================== */
+        .chart-wrap { height: 150px; }
+
+        /* =====================================================
+           GAMES SCROLL ROW
+        ===================================================== */
+        .games-row {
+            display: flex; gap: 12px;
+            overflow-x: auto; padding-bottom: 4px; scrollbar-width: none;
+        }
+        .games-row::-webkit-scrollbar { display: none; }
+
+        .game-chip {
+            flex-shrink: 0; background: white;
+            border-radius: 18px; border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: var(--shadow-soft); padding: 14px 12px;
+            text-align: center; text-decoration: none; color: var(--text);
+            width: 100px; transition: all 0.2s;
+        }
+        .game-chip:hover {
+            transform: translateY(-3px); border-color: var(--accent);
+            box-shadow: var(--shadow-hover);
+        }
+        .game-chip-icon { font-size: 1.7rem; margin-bottom: 6px; }
+        .game-chip-name { font-size: 0.72rem; font-weight: 800; line-height: 1.3; }
+        .game-chip-sub  { font-size: 0.62rem; color: var(--text-light); margin-top: 2px; font-weight: 500; }
+
+        /* =====================================================
+           ASSESSMENT BANNER
+        ===================================================== */
+        .assess-banner {
+            background: linear-gradient(135deg, var(--warm), #FFF3E0);
+            border: 1px solid rgba(245,158,11,0.25);
+            border-radius: var(--radius-card);
+            padding: 24px 28px;
+            display: flex; gap: 16px; align-items: flex-start;
+        }
+        .assess-icon  { font-size: 2rem; flex-shrink: 0; }
+        .assess-title { font-weight: 800; font-size: 1rem; margin-bottom: 4px; }
+        .assess-sub   { font-size: 0.85rem; color: var(--text-light); line-height: 1.5; }
+        .assess-tags  { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+        .assess-tag {
+            padding: 6px 14px; border-radius: var(--radius-btn);
+            font-size: 0.78rem; font-weight: 700;
+            background: white; color: var(--primary);
+            border: 1px solid rgba(124,92,191,0.25);
+            cursor: pointer; text-decoration: none;
+            transition: all 0.2s; font-family: inherit;
+        }
+        .assess-tag:hover { background: var(--primary); color: white; }
+
+        /* =====================================================
+           PSYCHOLOGIST CTA
+        ===================================================== */
+        .psych-card {
+            background: linear-gradient(135deg, #F0FFF4, #E6FFFA);
+            border: 1px solid rgba(86,207,178,0.3);
+            border-radius: var(--radius-card);
+            padding: 24px 28px;
+            display: flex; justify-content: space-between;
+            align-items: center; gap: 16px;
+        }
+        .psych-title { font-weight: 800; font-size: 1rem; color: #065F46; margin-bottom: 4px; }
+        .psych-sub   { font-size: 0.83rem; color: #047857; line-height: 1.5; max-width: 300px; }
+        .psych-avatars { display: flex; margin-top: 10px; }
+        .psych-av {
+            width: 30px; height: 30px; border-radius: 50%;
+            border: 2px solid white; font-size: 1rem;
+            display: flex; align-items: center; justify-content: center;
+            margin-left: -8px;
+        }
+        .psych-av:first-child { margin-left: 0; }
+        .psych-av-more { background: var(--primary); color: white; font-size: 0.65rem; font-weight: 800; }
+
+        .btn-psych {
+            flex-shrink: 0; background: var(--accent); color: white;
+            padding: 11px 22px; border-radius: var(--radius-btn);
+            font-weight: 800; font-size: 0.85rem;
+            text-decoration: none; border: none; cursor: pointer;
+            box-shadow: 0 8px 20px rgba(86,207,178,0.3);
+            transition: all 0.2s; white-space: nowrap;
+        }
+        .btn-psych:hover { transform: translateY(-2px); color: white; }
+        @media (max-width: 480px) {
+            .psych-card { flex-direction: column; align-items: flex-start; }
+            .btn-psych  { width: 100%; text-align: center; }
+        }
+
+        /* =====================================================
+           JOURNAL PREVIEW
+        ===================================================== */
+        .journal-empty {
+            text-align: center; padding: 16px 0;
+        }
+        .journal-empty-icon { font-size: 2.2rem; margin-bottom: 8px; }
+        .journal-empty-text { font-size: 0.85rem; color: var(--text-light); line-height: 1.6; }
+
+        .journal-entry {
+            border-left: 3px solid var(--soft);
+            padding-left: 14px; margin-bottom: 14px;
+            transition: border-color 0.2s; cursor: default;
+        }
+        .journal-entry:hover { border-left-color: var(--primary); }
+        .journal-entry:last-child { margin-bottom: 0; }
+        .journal-entry-date {
+            font-size: 0.72rem; font-weight: 700;
+            color: var(--text-light); margin-bottom: 3px;
+        }
+        .journal-entry-text {
+            font-size: 0.87rem; color: var(--text); line-height: 1.55;
+            display: -webkit-box; -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical; overflow: hidden;
+        }
+
+        .btn-journal-new {
+            display: flex; align-items: center; justify-content: center;
+            gap: 6px; width: 100%; margin-top: 16px;
+            padding: 12px; background: var(--soft);
+            border: 2px dashed rgba(124,92,191,0.3);
+            border-radius: 14px; color: var(--primary);
+            font-weight: 700; font-size: 0.88rem;
+            cursor: pointer; font-family: inherit;
+            transition: all 0.2s;
+        }
+        .btn-journal-new:hover { background: var(--primary); color: white; border-style: solid; }
+
+        /* =====================================================
+           COMMUNITY CARD
+        ===================================================== */
+        .anon-post {
+            background: var(--soft); border-radius: 14px; padding: 14px;
+            margin-bottom: 10px; font-size: 0.85rem; color: var(--text);
+            line-height: 1.55; font-style: italic;
+            border-left: 3px solid rgba(124,92,191,0.25);
+            transition: border-color 0.2s; cursor: pointer;
+        }
+        .anon-post:hover { border-left-color: var(--primary); }
+        .anon-post:last-child { margin-bottom: 0; }
+        .anon-meta {
+            display: flex; gap: 10px; margin-top: 6px;
+            font-size: 0.7rem; color: var(--text-light);
+            font-style: normal; font-weight: 600;
+        }
+
+        /* =====================================================
+           CRISIS STRIP
+        ===================================================== */
+        .crisis-strip {
+            background: white; border-top: 1px solid rgba(0,0,0,0.05);
+            padding: 14px 20px; text-align: center;
+            font-size: 0.78rem; color: var(--text-light); font-weight: 500;
+        }
+        .crisis-strip a {
+            color: var(--primary); font-weight: 700; text-decoration: none;
+        }
+        .crisis-strip a:hover { text-decoration: underline; }
+
+        /* =====================================================
+           MOBILE NAV  — matches games.html pattern
+        ===================================================== */
+        .mobile-nav {
+            display: none; position: fixed; bottom: 0; left: 0; width: 100%;
+            background: rgba(255,255,255,0.98); backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(0,0,0,0.05);
+            justify-content: space-around;
+            padding: 10px 0 max(10px, env(safe-area-inset-bottom));
+            z-index: 1000;
+        }
+        .mobile-nav a {
+            text-decoration: none; color: var(--text-light);
+            display: flex; flex-direction: column;
+            align-items: center; gap: 3px;
+            font-size: 0.68rem; font-weight: 700;
+            min-width: 50px; transition: color 0.2s;
+        }
+        .mobile-nav a.active { color: var(--primary); }
+        .mobile-nav a span   { font-size: 1.25rem; line-height: 1; }
+        @media (max-width: 768px) { .mobile-nav { display: flex; } }
+
+        /* =====================================================
+           MODALS — bottom sheet
+        ===================================================== */
+        .modal-overlay {
+            position: fixed; inset: 0; z-index: 2000;
+            background: rgba(20,10,40,0.45);
+            backdrop-filter: blur(4px);
+            display: flex; align-items: flex-end; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.25s;
+        }
+        .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+        .modal-sheet {
+            width: 100%; max-width: 600px; background: white;
+            border-radius: 28px 28px 0 0;
+            padding: 24px 24px 40px;
+            transform: translateY(100%);
+            transition: transform 0.32s cubic-bezier(0.32,1.2,0.64,1);
+            max-height: 88dvh; overflow-y: auto;
+        }
+        .modal-overlay.open .modal-sheet { transform: translateY(0); }
+
+        .modal-handle {
+            width: 40px; height: 4px;
+            background: rgba(0,0,0,0.1); border-radius: 2px;
+            margin: 0 auto 20px;
+        }
+        .modal-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 16px; }
+
+        .form-input {
+            width: 100%; padding: 12px 16px;
+            border: 1.5px solid rgba(0,0,0,0.1);
+            border-radius: 14px; font-family: inherit;
+            font-size: 0.9rem; color: var(--text);
+            background: var(--soft); outline: none;
+            transition: border-color 0.2s; resize: none;
+            display: block; margin-bottom: 10px;
+        }
+        .form-input:focus { border-color: var(--primary); background: white; }
+        .form-label {
+            font-size: 0.8rem; font-weight: 700;
+            color: var(--text-light); margin-bottom: 8px; display: block;
+        }
+
+        .mood-mini-row { display: flex; gap: 8px; margin-bottom: 16px; }
+        .mood-mini-btn {
+            flex: 1; font-size: 1.2rem; padding: 8px;
+            border: 1.5px solid rgba(0,0,0,0.08);
+            border-radius: 12px; background: var(--soft);
+            cursor: pointer; transition: all 0.15s; font-family: inherit;
+        }
+        .mood-mini-btn.sel {
+            border-color: var(--primary); background: white;
+            box-shadow: 0 4px 12px rgba(124,92,191,0.15);
+        }
+
+        .btn-save {
+            width: 100%; padding: 14px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white; border: none; border-radius: 16px;
+            font-family: inherit; font-weight: 800; font-size: 0.95rem;
+            cursor: pointer; margin-top: 8px;
+            box-shadow: 0 10px 24px rgba(124,92,191,0.25);
+            transition: opacity 0.2s, transform 0.2s;
+        }
+        .btn-save:hover { opacity: 0.92; transform: translateY(-2px); }
+
+        .cat-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 16px; }
+        .cat-btn {
+            padding: 6px 14px; border-radius: var(--radius-btn);
+            font-size: 0.78rem; font-weight: 700;
+            background: var(--soft); color: var(--primary);
+            border: 1px solid rgba(124,92,191,0.2);
+            cursor: pointer; font-family: inherit; transition: all 0.15s;
+        }
+        .cat-btn.sel { background: var(--primary); color: white; }
+
+        /* =====================================================
+           TOAST
+        ===================================================== */
+        .toast {
+            position: fixed; bottom: 76px; left: 50%;
+            transform: translateX(-50%) translateY(10px);
+            background: var(--text); color: white;
+            padding: 10px 22px; border-radius: var(--radius-btn);
+            font-size: 0.85rem; font-weight: 700;
+            z-index: 3000; opacity: 0; pointer-events: none;
+            transition: opacity 0.25s, transform 0.25s; white-space: nowrap;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        /* =====================================================
+           ANIMATION
+        ===================================================== */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .fade-up { animation: fadeUp 0.45s ease both; }
+
+    </style>
+</head>
+<body>
+
+    <!-- ═══════════════ NAV ═══════════════ -->
+    <nav id="navbar">
+        <div class="nav-container">
+            <a href="/" class="logo">✨ YodhaMind</a>
+            <div class="nav-right">
+                <div class="streak-pill hidden" id="streakPill">
+                    🔥 <span id="streakNum">0</span>-day streak
+                </div>
+                <div class="nav-links">
+                    <a href="/games">Mind Gym</a>
+                    <a href="/dashboard" class="active">Dashboard</a>
+                    <a href="#" style="opacity: 0.6; cursor: not-allowed;">Support (Coming Soon)</a>
+                    <button class="btn-cta" onclick="openJournalModal()">+ Journal</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ═══════════════ MAIN PAGE ═══════════════ -->
+    <main class="page">
+
+        <!-- GREETING -->
+        <div class="greeting fade-up">
+            <div class="greeting-eyebrow" id="greetingTime">Good morning</div>
+            <h1 class="greeting-name">
+                Hey, <span style="color:var(--primary);" id="greetingName">Warrior</span> 👋
+            </h1>
+            <p class="greeting-sub" id="greetingSub">
+                Start with a mood check-in to personalise your day.
+            </p>
+        </div>
+
+        <!-- ── MOOD CHECK-IN ── -->
+        <div class="card section-gap">
+            <div class="card-title">
+                How are you feeling right now?
+                <span id="moodCardBadge" style="font-size:0.78rem; font-weight:600; color:var(--text-light);">Daily check-in</span>
+            </div>
+            <div class="mood-emojis" id="moodEmojiRow">
+                <button class="mood-emoji-btn" onclick="logMood(5,'amazing')">
+                    😄<span class="mood-label">AMAZING</span>
+                </button>
+                <button class="mood-emoji-btn" onclick="logMood(4,'good')">
+                    🙂<span class="mood-label">GOOD</span>
+                </button>
+                <button class="mood-emoji-btn" onclick="logMood(3,'okay')">
+                    😐<span class="mood-label">OKAY</span>
+                </button>
+                <button class="mood-emoji-btn" onclick="logMood(2,'low')">
+                    😔<span class="mood-label">LOW</span>
+                </button>
+                <button class="mood-emoji-btn" onclick="logMood(1,'rough')">
+                    😰<span class="mood-label">ROUGH</span>
+                </button>
+            </div>
+            <div class="mood-done-msg" id="moodDoneMsg"></div>
+        </div>
+
+        <!-- ── WELLNESS SCORE ── -->
+        <div class="wellness-card section-gap">
+            <div class="wellness-inner">
+                <!-- Animated ring -->
+                <div class="score-ring-wrap">
+                    <svg width="96" height="96" viewBox="0 0 96 96">
+                        <circle class="score-ring-track" cx="48" cy="48" r="42"/>
+                        <circle class="score-ring-fill"  cx="48" cy="48" r="42" id="scoreRingFill"/>
+                    </svg>
+                    <div class="score-ring-center">
+                        <div class="score-ring-number" id="scoreNumber">--</div>
+                        <div class="score-ring-label">Score</div>
+                    </div>
+                </div>
+                <!-- Text & bars -->
+                <div class="wellness-text">
+                    <div class="wellness-status"  id="wellnessStatus">Computing…</div>
+                    <div class="wellness-tagline" id="wellnessTagline">Your wellness score updates daily</div>
+                    <div class="w-bars">
+                        <div class="w-bar-row">
+                            <span class="w-bar-name">Mood</span>
+                            <div class="w-bar-track"><div class="w-bar-fill" id="wBarMood"></div></div>
+                            <span class="w-bar-val" id="wValMood">--</span>
+                        </div>
+                        <div class="w-bar-row">
+                            <span class="w-bar-name">Activity</span>
+                            <div class="w-bar-track"><div class="w-bar-fill" id="wBarActivity"></div></div>
+                            <span class="w-bar-val" id="wValActivity">--</span>
+                        </div>
+                        <div class="w-bar-row">
+                            <span class="w-bar-name">Assessment</span>
+                            <div class="w-bar-track"><div class="w-bar-fill" id="wBarAssess"></div></div>
+                            <span class="w-bar-val" id="wValAssess">--</span>
+                        </div>
+                        <div class="w-bar-row">
+                            <span class="w-bar-name">Streak</span>
+                            <div class="w-bar-track"><div class="w-bar-fill" id="wBarStreak"></div></div>
+                            <span class="w-bar-val" id="wValStreak">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="wellness-bottom">
+                <button class="wellness-assess-btn"
+                    onclick="window.location.href='/assessment'">
+                    📋 Take or update your assessment →
+                </button>
+            </div>
+        </div>
+
+        <!-- ── QUICK ACTIONS ── -->
+        <div style="font-size:1rem; font-weight:800; margin-bottom:14px;" class="section-gap">
+            Quick Access
+        </div>
+        <div class="quick-grid section-gap">
+            <a href="/games" class="quick-card">
+                <div class="quick-icon tint-purple">🎮</div>
+                <div>
+                    <div class="quick-name">Mind Gym</div>
+                    <div class="quick-sub">7 focus games</div>
+                </div>
+                <span class="quick-arrow">›</span>
+            </a>
+            <button class="quick-card" onclick="openJournalModal()">
+                <div class="quick-icon tint-teal">📝</div>
+                <div>
+                    <div class="quick-name">Journal</div>
+                    <div class="quick-sub">Write freely</div>
+                </div>
+                <span class="quick-arrow">›</span>
+            </button>
+            <a href="/tools/Yodhaflow.html" class="quick-card">
+                <div class="quick-icon tint-orange">🌬️</div>
+                <div>
+                    <div class="quick-name">Breathe</div>
+                    <div class="quick-sub">Yodha Flow</div>
+                </div>
+                <span class="quick-arrow">›</span>
+            </a>
+            <a href="/tools/Focusrealm.html" class="quick-card">
+                <div class="quick-icon tint-dark">⏱️</div>
+                <div>
+                    <div class="quick-name">Focus Timer</div>
+                    <div class="quick-sub">Pomodoro</div>
+                </div>
+                <span class="quick-arrow">›</span>
+            </a>
+        </div>
+
+        <!-- ── MOOD CHART ── -->
+        <div class="card section-gap">
+            <div class="card-title">
+                7-Day Mood Trend
+                <span id="avgMoodLabel" style="font-size:0.78rem; font-weight:600; color:var(--text-light);">No data yet</span>
+            </div>
+            <div class="chart-wrap">
+                <canvas id="moodChart"></canvas>
+            </div>
+        </div>
+
+        <!-- ── GAMES ROW ── -->
+        <div style="font-size:1rem; font-weight:800; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;" class="section-gap">
+            Mind Gym Games
+            <a href="/games" class="card-link">See all →</a>
+        </div>
+        <div class="games-row section-gap">
+            <a href="/games/yodhamatch.html"    class="game-chip"><div class="game-chip-icon">🃏</div><div class="game-chip-name">Yodha Match</div><div class="game-chip-sub">Memory</div></a>
+            <a href="/games/yodha_lumina.html"  class="game-chip"><div class="game-chip-icon">💡</div><div class="game-chip-name">Lumina</div><div class="game-chip-sub">Pattern</div></a>
+            <a href="/games/yodha_enchaeos.html"class="game-chip"><div class="game-chip-icon">⚡</div><div class="game-chip-name">Enchaeos</div><div class="game-chip-sub">Reaction</div></a>
+            <a href="/games/yodha_aura.html"    class="game-chip"><div class="game-chip-icon">🌀</div><div class="game-chip-name">Aura</div><div class="game-chip-sub">Focus</div></a>
+            <a href="/games/yodha_mandala.html" class="game-chip"><div class="game-chip-icon">🪷</div><div class="game-chip-name">Mandala</div><div class="game-chip-sub">Zen Art</div></a>
+            <a href="/games/untangle.html"      class="game-chip"><div class="game-chip-icon">🕸️</div><div class="game-chip-name">Untangle</div><div class="game-chip-sub">Puzzle</div></a>
+        </div>
+
+        <!-- ── SELF-ASSESSMENT ── -->
+        <div class="assess-banner section-gap">
+            <div class="assess-icon">📋</div>
+            <div>
+                <div class="assess-title">Self-Assessment Tests</div>
+                <div class="assess-sub">
+                    Science-backed 2-minute checks. Your answers power the wellness score above.
+                </div>
+                <div class="assess-tags">
+                    <a class="assess-tag" href="/assessment?type=stress">😤 Stress</a>
+                    <a class="assess-tag" href="/assessment?type=anxiety">😟 Anxiety</a>
+                    <a class="assess-tag" href="/assessment?type=burnout">😩 Burnout</a>
+                    <a class="assess-tag" href="/assessment?type=focus">🎯 Focus</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── PSYCHOLOGIST CTA ── -->
+        <div class="psych-card section-gap" style="opacity: 0.8; pointer-events: none;">
+            <div>
+                <div class="psych-title">Talk to a Verified Counselor (Coming Soon)</div>
+                <div class="psych-sub">
+                    Licensed psychologists will be available for 1-on-1 sessions soon.
+                </div>
+                <div class="psych-avatars">
+                    <div class="psych-av" style="background:#FDE68A;">👩‍⚕️</div>
+                    <div class="psych-av" style="background:#BFDBFE;">👨‍⚕️</div>
+                    <div class="psych-av" style="background:#DDD6FE;">👩‍⚕️</div>
+                    <div class="psych-av psych-av-more">+4</div>
+                </div>
+            </div>
+            <button class="btn-psych" style="background: #94a3b8;">Coming Soon</button>
+        </div>
+
+        <!-- ── JOURNAL PREVIEW ── -->
+        <div class="card section-gap">
+            <div class="card-title">
+                My Journal
+                <button class="card-link" onclick="openJournalModal()">+ New entry →</button>
+            </div>
+            <div id="journalEmpty" class="journal-empty">
+                <div class="journal-empty-icon">📖</div>
+                <div class="journal-empty-text">
+                    Your journal is empty.<br>
+                    Writing even 2 sentences a day reduces stress hormones.
+                </div>
+            </div>
+            <div id="journalEntries"></div>
+            <button class="btn-journal-new" onclick="openJournalModal()">✏️ Write in my journal</button>
+        </div>
+
+        <!-- ── COMMUNITY ── -->
+        <div class="card section-gap">
+            <div class="card-title">
+                Student Community
+                <button class="card-link" onclick="showToast('Community page coming soon 🚀')">View all →</button>
+            </div>
+            <div class="anon-post">
+                "Finals are crushing me. Can't focus for more than 10 mins. Anyone else?"
+                <div class="anon-meta"><span>😔 Anonymous</span><span>❤️ 47 relate</span></div>
+            </div>
+            <div class="anon-post">
+                "The YodhaFlow breathing exercise actually helped during my panic attack before the exam."
+                <div class="anon-meta"><span>🌿 Anonymous</span><span>❤️ 83 relate</span></div>
+            </div>
+            <div class="anon-post">
+                "How do you handle comparison anxiety? I feel so behind all my batchmates."
+                <div class="anon-meta"><span>💭 Anonymous</span><span>❤️ 61 relate</span></div>
+            </div>
+            <button class="btn-journal-new" onclick="openAnonModal()">💬 Share something anonymously</button>
+        </div>
+
+    </main>
+
+    <!-- ── CRISIS STRIP ── -->
+    <div class="crisis-strip">
+        Struggling and need immediate help? &nbsp;
+        <a href="tel:9152987821">iCall: 9152987821</a> &nbsp;·&nbsp;
+        <a href="tel:18602662345">Vandrevala: 1860-2662-345</a>
+    </div>
+
+    <!-- ═══════════════ MOBILE NAV ═══════════════ -->
+    <nav class="mobile-nav">
+        <a href="dashboard.html" class="active"><span>🏠</span>Home</a>
+        <a href="games.html"><span>🎮</span>Games</a>
+        <a href="assessment.html"><span>📋</span>Assess</a>
+        <a href="psychologist.html"><span>💬</span>Support</a>
+        <a href="#" onclick="openJournalModal(); return false;"><span>📝</span>Journal</a>
+    </nav>
+
+    <!-- ═══════════════ JOURNAL MODAL ═══════════════ -->
+    <div class="modal-overlay" id="journalModal"
+         onclick="closeModalOnBg(event,'journalModal')">
+        <div class="modal-sheet">
+            <div class="modal-handle"></div>
+            <div class="modal-title">✍️ New Journal Entry</div>
+            <input  class="form-input" id="jTitleInput" type="text"
+                    placeholder="Title (optional)"/>
+            <textarea class="form-input" id="jContentInput" rows="6"
+                    placeholder="What's on your mind? Write freely — no one else can read this."></textarea>
+            <label class="form-label">How are you feeling right now?</label>
+            <div class="mood-mini-row">
+                <button class="mood-mini-btn" data-val="5" onclick="pickJMood(this)">😄</button>
+                <button class="mood-mini-btn" data-val="4" onclick="pickJMood(this)">🙂</button>
+                <button class="mood-mini-btn" data-val="3" onclick="pickJMood(this)">😐</button>
+                <button class="mood-mini-btn" data-val="2" onclick="pickJMood(this)">😔</button>
+                <button class="mood-mini-btn" data-val="1" onclick="pickJMood(this)">😰</button>
+            </div>
+            <button class="btn-save" onclick="saveJournalEntry()">Save Entry 💾</button>
+        </div>
+    </div>
+
+    <!-- ═══════════════ ANON MODAL ═══════════════ -->
+    <div class="modal-overlay" id="anonModal"
+         onclick="closeModalOnBg(event,'anonModal')">
+        <div class="modal-sheet">
+            <div class="modal-handle"></div>
+            <div class="modal-title">💬 Share Anonymously</div>
+            <p style="font-size:0.83rem;color:var(--text-light);margin-bottom:14px;line-height:1.6;">
+                Your identity is completely hidden. A safe, judgment-free space for students.
+            </p>
+            <textarea class="form-input" id="anonInput" rows="5"
+                    placeholder="Share a struggle, ask a question, or just vent…"></textarea>
+            <label class="form-label">Category</label>
+            <div class="cat-row">
+                <button class="cat-btn sel" onclick="pickCat(this,'academics')">📚 Academics</button>
+                <button class="cat-btn"     onclick="pickCat(this,'stress')">😤 Stress</button>
+                <button class="cat-btn"     onclick="pickCat(this,'relationships')">💔 Relationships</button>
+                <button class="cat-btn"     onclick="pickCat(this,'general')">💭 General</button>
+            </div>
+            <button class="btn-save" onclick="submitAnon()">Post Anonymously 🌿</button>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast"></div>
+
+
+    <!-- ═══════════════════════════════════════════
+         JAVASCRIPT
+    ═══════════════════════════════════════════ -->
+    <script>
+    'use strict';
+
+    /* ──────────────────────────────────────────
+       NAV SHADOW ON SCROLL
+    ────────────────────────────────────────── */
+    window.addEventListener('scroll', () => {
+        document.getElementById('navbar')
+            .classList.toggle('scrolled', window.scrollY > 10);
+    }, { passive: true });
+
+    /* ──────────────────────────────────────────
+       GREETING
+    ────────────────────────────────────────── */
+    function initGreeting() {
+        const h = new Date().getHours();
+        const timeLabel = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+        document.getElementById('greetingTime').textContent = timeLabel;
+
+        const user = YM.getUser();
+        if (user && user.name) {
+            document.getElementById('greetingName').textContent = user.name;
+        }
+
+        const today = YM.getTodayMood();
+        if (today) {
+            const lines = {
+                amazing: "You're feeling amazing today — keep that momentum! 🌟",
+                good:    "Glad you're feeling good. Let's make the most of it 🙂",
+                okay:    "Steady days matter too. You're here and that counts 💙",
+                low:     "It's okay to have low days. Be gentle with yourself 🤗",
+                rough:   "Rough days are temporary. You've got through all of yours so far 💪"
+            };
+            document.getElementById('greetingSub').textContent =
+                lines[today.label] || 'Welcome back!';
+        }
+    }
+
+    /* ──────────────────────────────────────────
+       STREAK PILL
+    ────────────────────────────────────────── */
+    function initStreakPill() {
+        const s = YM.getStreak();
+        if (s.current > 0) {
+            document.getElementById('streakNum').textContent = s.current;
+            document.getElementById('streakPill').classList.remove('hidden');
+        }
+    }
+
+    /* ──────────────────────────────────────────
+       MOOD CHECK-IN
+    ────────────────────────────────────────── */
+    const MOOD_RESPONSES = {
+        amazing: "Amazing! Keep riding that wave 🌟",
+        good:    "Great to hear — have a productive day 🙂",
+        okay:    "Steady is perfectly fine. Take it one step at a time 💙",
+        low:     "Thanks for checking in. Be kind to yourself today 🤗",
+        rough:   "It's okay not to be okay. We're here for you ❤️"
+    };
+
+    function logMood(value, label) {
+        YM.logMood(value, label);           // ← writes to ym_mood_log via storage layer
+        showMoodDone(label);
+        renderWellnessScore();
+        renderMoodChart();
+        initStreakPill();
+        showToast('Mood logged ✓');
+    }
+
+    function showMoodDone(label) {
+        document.getElementById('moodEmojiRow').style.display = 'none';
+        const el = document.getElementById('moodDoneMsg');
+        el.style.display = 'block';
+        el.innerHTML = `
+            ${MOOD_RESPONSES[label]}
+            <span>Mood saved. Your wellness score has been updated.</span>
+        `;
+        document.getElementById('moodCardBadge').textContent = '✓ Done';
+    }
+
+    function initMoodCard() {
+        const today = YM.getTodayMood();
+        if (today) showMoodDone(today.label);
+    }
+
+    /* ──────────────────────────────────────────
+       WELLNESS SCORE CARD
+    ────────────────────────────────────────── */
+    function renderWellnessScore() {
+        const w = YM.getWellnessScore();    // ← always fresh from storage layer
+
+        // Animated counter
+        animateCounter('scoreNumber', w.score, 1200);
+
+        // Status + tagline
+        const taglines = {
+            'Thriving':       'You are absolutely killing it right now 🌟',
+            'Doing Good':     'Things are looking positive — keep going 🙂',
+            'Holding Steady': 'Consistent effort is what matters most 💙',
+            'Struggling':     "It's okay — small steps still move you forward 🤗",
+            'Needs Support':  'Reaching out is the bravest thing you can do ❤️'
+        };
+        document.getElementById('wellnessStatus').textContent  = w.label;
+        document.getElementById('wellnessTagline').textContent = taglines[w.label] || '';
+
+        // SVG ring  (circumference = 2π × 42 ≈ 264)
+        const CIRC   = 264;
+        const offset = CIRC - (w.score / 100) * CIRC;
+        setTimeout(() => {
+            document.getElementById('scoreRingFill').style.strokeDashoffset = offset;
+        }, 150);
+
+        // Component bars
+        const c = w.components;
+        setTimeout(() => {
+            setBar('wBarMood',     'wValMood',     c.moodScore);
+            setBar('wBarActivity', 'wValActivity', c.engageScore);
+            setBar('wBarAssess',   'wValAssess',   c.assessScore);
+            setBar('wBarStreak',   'wValStreak',   c.streakScore);
+        }, 300);
+    }
+
+    function setBar(barId, valId, value) {
+        document.getElementById(barId).style.width = value + '%';
+        document.getElementById(valId).textContent = value;
+    }
+
+    function animateCounter(elId, target, duration) {
+        const el    = document.getElementById(elId);
+        const start = performance.now();
+        (function tick(now) {
+            const p    = Math.min((now - start) / duration, 1);
+            el.textContent = Math.round(p * target);
+            if (p < 1) requestAnimationFrame(tick);
+        })(start);
+    }
+
+    /* ──────────────────────────────────────────
+       MOOD CHART
+    ────────────────────────────────────────── */
+    let chartInstance = null;
+
+    function renderMoodChart() {
+        const labels = [], data = [];
+
+        for (let i = 6; i >= 0; i--) {
+            const d      = new Date(Date.now() - i * 86400000);
+            const dayStr = d.toDateString();
+            labels.push(d.toLocaleDateString('en-IN', { weekday: 'short' }));
+
+            // Pull from raw key directly so we can search by date string
+            const allLogs = YM.get('ym_mood_log', []);
+            const entry   = allLogs.find(l => new Date(l.ts).toDateString() === dayStr);
+            data.push(entry ? entry.mood : null);
+        }
+
+        // Average label
+        const valid = data.filter(d => d !== null);
+        if (valid.length) {
+            const avg   = (valid.reduce((s, v) => s + v, 0) / valid.length).toFixed(1);
+            const emoji = avg >= 4 ? '😄' : avg >= 3 ? '🙂' : avg >= 2 ? '😐' : '😔';
+            document.getElementById('avgMoodLabel').textContent = `Avg: ${emoji} ${avg}`;
+        }
+
+        const ctx = document.getElementById('moodChart').getContext('2d');
+        if (chartInstance) chartInstance.destroy();
+
+        chartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{
+                    data,
+                    borderColor:          '#7C5CBF',
+                    backgroundColor:      'rgba(124,92,191,0.07)',
+                    pointBackgroundColor: '#7C5CBF',
+                    pointRadius: 5, pointHoverRadius: 7,
+                    tension: 0.4, fill: true, spanGaps: true
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => {
+                                const v = ctx.raw;
+                                if (v === null) return 'No data';
+                                return ['','😰 Rough','😔 Low','😐 Okay','🙂 Good','😄 Amazing'][v] || v;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        min: 1, max: 5,
+                        ticks: { stepSize: 1, callback: v => ['','😰','😔','😐','🙂','😄'][v] || '' },
+                        grid: { color: 'rgba(0,0,0,0.04)' }
+                    },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    /* ──────────────────────────────────────────
+       JOURNAL PREVIEW
+    ────────────────────────────────────────── */
+    function renderJournalPreview() {
+        const entries  = YM.getJournalEntries(3);
+        const emptyEl  = document.getElementById('journalEmpty');
+        const listEl   = document.getElementById('journalEntries');
+        const moodEmoji = ['','😰','😔','😐','🙂','😄'];
+
+        if (!entries.length) {
+            emptyEl.style.display = 'block';
+            listEl.innerHTML = '';
+            return;
+        }
+        emptyEl.style.display = 'none';
+        listEl.innerHTML = entries.map(e => `
+            <div class="journal-entry">
+                <div class="journal-entry-date">
+                    ${new Date(e.ts).toLocaleDateString('en-IN',{month:'short',day:'numeric'})}
+                    ${e.mood ? ' · ' + moodEmoji[e.mood] : ''}
+                    ${e.title ? ' · ' + e.title : ''}
+                </div>
+                <div class="journal-entry-text">${e.content}</div>
+            </div>
+        `).join('');
+    }
+
+    /* ──────────────────────────────────────────
+       JOURNAL MODAL
+    ────────────────────────────────────────── */
+    let jMood = null;
+
+    function openJournalModal() {
+        document.getElementById('jTitleInput').value   = '';
+        document.getElementById('jContentInput').value = '';
+        jMood = null;
+        document.querySelectorAll('.mood-mini-btn').forEach(b => b.classList.remove('sel'));
+        document.getElementById('journalModal').classList.add('open');
+    }
+    function pickJMood(btn) {
+        document.querySelectorAll('.mood-mini-btn').forEach(b => b.classList.remove('sel'));
+        btn.classList.add('sel');
+        jMood = parseInt(btn.dataset.val);
+    }
+    function saveJournalEntry() {
+        const content = document.getElementById('jContentInput').value.trim();
+        if (!content) { showToast('Write something first ✏️'); return; }
+        const title = document.getElementById('jTitleInput').value.trim();
+        YM.saveJournalEntry(title, content, jMood, []);  // ← storage layer
+        document.getElementById('journalModal').classList.remove('open');
+        renderJournalPreview();
+        renderWellnessScore();   // engagement score updates
+        showToast('Journal entry saved 💾');
+    }
+
+    /* ──────────────────────────────────────────
+       ANON POST MODAL
+    ────────────────────────────────────────── */
+    let anonCat = 'academics';
+
+    function openAnonModal() {
+        document.getElementById('anonInput').value = '';
+        document.getElementById('anonModal').classList.add('open');
+    }
+    function pickCat(btn, cat) {
+        document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('sel'));
+        btn.classList.add('sel');
+        anonCat = cat;
+    }
+    function submitAnon() {
+        const content = document.getElementById('anonInput').value.trim();
+        if (!content) { showToast('Write something first ✏️'); return; }
+        const posts = YM.get('ym_anon_posts', []);
+        posts.unshift({ content, category: anonCat, ts: new Date().toISOString() });
+        YM.set('ym_anon_posts', posts.slice(0, 50));
+        document.getElementById('anonModal').classList.remove('open');
+        showToast('Posted anonymously 🌿');
+    }
+
+    /* ──────────────────────────────────────────
+       MODAL UTILITIES
+    ────────────────────────────────────────── */
+    function closeModalOnBg(e, id) {
+        if (e.target === e.currentTarget) {
+            document.getElementById(id).classList.remove('open');
+        }
+    }
+
+    /* ──────────────────────────────────────────
+       TOAST
+    ────────────────────────────────────────── */
+    let toastTimer = null;
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+    }
+
+    /* ──────────────────────────────────────────
+       INIT
+    ────────────────────────────────────────── */
+    document.addEventListener('DOMContentLoaded', () => {
+        initGreeting();
+        initStreakPill();
+        initMoodCard();
+        renderWellnessScore();
+        renderMoodChart();
+        renderJournalPreview();
+    });
+    </script>
+
+<script src="../shared/nav-component.js"></script>
+    <script src="../shared/crisis-support.js"></script>
+</body>
+</html>
+
+
+
